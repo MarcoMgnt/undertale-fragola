@@ -61,10 +61,10 @@ const menuButtons = {
   mercy: document.getElementById("mercy-button")
 };
 const menuOptions = {
-  fight: ["✲ Attack", "✲ Stare", "✲ Charge", "✲ Wait"],
-  act: ["✲ Compliment", "✲ Tease", "✲ Check", "✲ Hug"],
-  item: ["✲ Coffee", "✲ Placeholder 2", "✲ Placeholder 3", "✲ Placeholder 4"],
-  mercy: ["✲ Spare", "✲ Plead", "✲ Surrender", "✲ Escape"]
+  fight: ["✲ Rircerca", "✲ Scrivi la tesi"],
+  act: ["✲ Chiedi aiuto al prof", "✲ Chiedi aiuto ai colleghi"],
+  item: ["✲ Caffè", "✲ Fragole", "✲ backup tesi"],
+  mercy: ["✲ Arrenditi", "✲ Accettazione", "✲ Consegna tesi"]
 };
 
 let activeMenu = null;
@@ -159,8 +159,6 @@ function openMenu(type) {
   updateBoxMenuPosition();
   renderMenuOptions();
   boxMenu.classList.remove("hidden");
-  document.getElementById("text").innerText =
-    `Choose an option from ${type.toUpperCase()}...`;
 }
 
 function closeMenu() {
@@ -172,7 +170,7 @@ function closeMenu() {
 function selectMenuOption(type, option) {
   selectedOption = option;
   renderMenuOptions();
-  if (type === "item" && option === "✲ Coffee") {
+  if (type === "item" && option === "✲ Caffè") {
     drinkCoffee();
   } else {
     document.getElementById("text").innerText = `Selected ${option}.`;
