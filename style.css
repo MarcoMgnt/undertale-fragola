@@ -1,0 +1,21 @@
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+  font-family: monospace;
+  touch-action: none; /* IMPORTANTISSIMO per mobile */
+}
+
+canvas {
+  display: block;
+  background: black;
+}
+
+#ui {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  color: white;
+  padding: 20px;
+  font-size: 18px;
+}
