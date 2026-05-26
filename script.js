@@ -35,7 +35,10 @@ window.addEventListener("resize", resize);
 const baseSpeed = 240;
 const coffeeSpeedBoost = 60;
 const coffeeShakePerCup = 1.5;
+const COFFEE_SHAKE_DECAY_INTERVAL = 30;
 let coffeeDrank = 0;
+let coffeeShakeLevel = 0;
+let coffeeShakeDecayTimer = COFFEE_SHAKE_DECAY_INTERVAL;
 
 let animationTime = 0;
 const bossBobbingSpeed = 0.9*2;
@@ -63,7 +66,7 @@ const menuButtons = {
 };
 const menuOptions = {
   fight: ["✲ Raccogli le fragole", "✲ Rircerca", "✲ Scrivi la tesi"],
-  act: ["✲ Manda la tesi al prof"],
+  act: ["✲ Discuti la tesi con il prof"],
   item: ["✲ Caffè", "✲ Fragole"],
   mercy: ["✲ Abbandona", "✲ Accettazione", "✲ Consegna tesi"]
 };
@@ -95,7 +98,11 @@ let fragoleSpawnCooldown = 0;
 let fragoleWins = 0;
 const FRAGOLE_TARGET = 16;
 let targetParole = 100000;
-let tesicorretta = false
+let tesicorretta = false;
+let boxShakeTimer = 0;
+const BOX_SHAKE_DURATION = 1.0;
+const BOX_SHAKE_INTENSITY = 20;
+const STATUS_SHAKE_INTENSITY = 6;
 
 function levelFromValue(v) {
   const n = Math.max(1, Math.min(10, Math.round(v)));
@@ -130,6 +137,29 @@ function renderStatusBar() {
 
   const wordsEl = document.getElementById("status-words");
   if (wordsEl) wordsEl.innerText = wordsWritten.toLocaleString();
+
+  const statusBar = document.getElementById("status-bar");
+  if (statusBar) {
+    if (boxShakeTimer > 0) {
+      const shakeFactor = boxShakeTimer / BOX_SHAKE_DURATION;
+      const offsetX = (Math.random() - 0.5) * STATUS_SHAKE_INTENSITY * shakeFactor;
+      const offsetY = (Math.random() - 0.5) * STATUS_SHAKE_INTENSITY * shakeFactor;
+      statusBar.style.transform = `translate(-50%, ${offsetY}px) translateX(${offsetX}px)`;
+      statusBar.style.border = "1px solid red";
+      statusBar.style.boxShadow = "0 0 14px rgba(255, 0, 0, 0.7)";
+      statusBar.style.borderRadius = "10px";
+      statusBar.querySelectorAll(".status-value").forEach((el) => {
+        el.style.backgroundColor = "rgba(255, 0, 0, 0.12)";
+      });
+    } else {
+      statusBar.style.transform = "translateX(-50%)";
+      statusBar.style.border = "none";
+      statusBar.style.boxShadow = "none";
+      statusBar.querySelectorAll(".status-value").forEach((el) => {
+        el.style.backgroundColor = "";
+      });
+    }
+  }
 }
 
 const playerSprite = document.getElementById("player-sprite");
@@ -203,6 +233,8 @@ function selectMenuOption(type, option) {
     startRicercaMinigame();
   } else if (type === "fight" && option === "✲ Scrivi la tesi") {
     startWritingMinigame();
+  } else if (type === "act" && option === "✲ Discuti la tesi con il prof") {
+    correzionetesi();
   } else if (type === "item" && option === "✲ Caffè") {
     drinkCoffee();
   } else if (type === "item" && option === "✲ Fragole") {
@@ -221,27 +253,30 @@ function selectMenuOption(type, option) {
 
 function drinkCoffee() {
   coffeeDrank += 1;
+  coffeeShakeLevel += 1;
+  coffeeShakeDecayTimer = COFFEE_SHAKE_DECAY_INTERVAL;
+  statusHP = Math.min(10, statusHP + 1);
   statusMotivation = Math.min(10, statusMotivation + 1);
   statusAnxiety = Math.min(10, statusAnxiety + 1);
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
-    `Bevi il caffè delle macchinette, fa schifo ma ti senti più sveglia`;
+    `✲ Bevi il caffè delle macchinette, fa schifo ma ti senti più sveglia`;
 }
 
 
 function mangiaFragole() {
-  if (strawberriesCollected <= 0) {
+  if (fragoleWins <= 0) {
     document.getElementById("text").innerText =
-      `Non hai fragole da mangiare! Raccoglile prima`;
+      `✲ Non hai fragole da mangiare! Raccoglile prima`;
     return;
   }
-  strawberriesCollected -= 1;
+  fragoleWins -= 1;
   statusHP = Math.min(10, statusHP + 2);
   statusMotivation = Math.min(10, statusMotivation + 1);
   statusAnxiety = Math.max(1, statusAnxiety - 1);
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
-    `Mangi le fragole che avresti dovuto analizzare...`;
+    `✲ Mangi le fragole che avresti dovuto analizzare...`;
 }
 
 function startRicercaMinigame() {
@@ -317,7 +352,7 @@ function updateFragole(deltaTime) {
     s.y = s.y; // fixed near top of box
 
     // simple collision check with player
-    const pb = getPlayerCollisionBounds(0.2);
+    const pb = getPlayerCollisionBounds(0.4);
     const sLeft = s.x - s.size / 2;
     const sRight = s.x + s.size / 2;
     const sTop = s.y - s.size / 2;
@@ -328,7 +363,7 @@ function updateFragole(deltaTime) {
       if (strawberriesCollected >= FRAGOLE_TARGET) {
         // increment fragoleWins which will boost writing later
         fragoleWins += 1;
-        stopMinigame(`Proprio un bel raccolto di fragole!`);
+        stopMinigame(`✲ Proprio un bel raccolto di fragole!`);
         return;
       }
     }
@@ -343,7 +378,7 @@ function updateFragole(deltaTime) {
     const pillarTop = p.y;
     const pillarBottom = box.y + box.h;
     if (!(pb.right < pillarLeft || pb.left > pillarRight || pb.bottom < pillarTop || pb.top > pillarBottom)) {
-      stopMinigame("Hai rotto una pianta!", true);
+      stopMinigame("✲ Hai rotto una pianta!", true);
       return;
     }
   }
@@ -374,11 +409,6 @@ function drawFragole(ctx) {
       ctx.stroke();
     }
   });
-
-  // HUD: collected
-  ctx.fillStyle = "white";
-  ctx.font = "16px sans-serif";
-  ctx.fillText(`Fragole: ${strawberriesCollected}/${FRAGOLE_TARGET}`, box.x + 10, box.y + 20);
 }
 
 function calculateWordsFromWriting() {
@@ -391,12 +421,35 @@ function calculateWordsFromWriting() {
   return Math.round(base * fragoleMultiplier);
 }
 
+function correzionetesi() {
+  if (wordsWritten <= 2000) {
+    document.getElementById("text").innerText =
+      `✲ Ma non hai ancora scritto niente! Non mi fare perdere tempo...`;
+    statusHP = Math.max(1, statusHP - 1);
+  } else if (wordsWritten <= 10000) {
+    wordsWritten = Math.max(0, wordsWritten - Math.round(Math.random() * 500 + 500)); // lose some words due to corrections
+    document.getElementById("text").innerText =
+      `✲ Non hai ancora scritto abbastanza! Ma intanto rimuovi questa parte... Totale parole: ${wordsWritten.toLocaleString()}`;
+    statusHP = Math.max(1, statusHP - 1);
+    statusMotivation = Math.max(1, statusMotivation - 1);
+    statusAnxiety = Math.min(10, statusAnxiety + 1);
+  } else if (wordsWritten > 10000) {
+    tesicorretta = true;
+    statusHP = Math.max(1, statusHP - 1);
+    statusMotivation = Math.max(1, statusMotivation - 1);
+    statusAnxiety = Math.min(10, statusAnxiety + 1);
+    wordsWritten = Math.max(0, wordsWritten - Math.round(Math.random() * 500 + 500)); // lose some words due to corrections
+    document.getElementById("text").innerText =
+      `✲ Non male ma cambia la struttura... Totale parole: ${wordsWritten.toLocaleString()}`;
+  }
+}
+
 function abbandona()  {
   statusHP = Math.max(1, statusHP - 2);
   statusMotivation = Math.max(1, statusMotivation - 3);
   statusAnxiety = Math.min(10, statusAnxiety + 3);
   document.getElementById("text").innerText =
-    `Hai deciso di abbandonare... ma ormai non puoi tornare indietro`;
+    `✲ Hai deciso di abbandonare... ma ormai non puoi tornare indietro`;
 }
 
 function accettazione() {
@@ -405,18 +458,18 @@ function accettazione() {
   statusMotivation = Math.max(1, statusMotivation - 2);
   statusAnxiety = Math.max(1, statusAnxiety - 3);
   document.getElementById("text").innerText =
-    `Accetti che la tesi non sara mai perfetta, la fine è in vista`;
+    `✲ Accetti che la tesi non sara mai perfetta, la fine è in vista`;
 }
 
 function submitThesis() {
   if (wordsWritten >= targetParole && tesicorretta === true) {
     document.getElementById("text").innerText =
-      `Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. Hai vinto!`;
+      `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. Hai vinto!`;
   } else {
     statusMotivation = Math.max(1, statusMotivation - 1);
     statusAnxiety = Math.min(10, statusAnxiety + 1);
     document.getElementById("text").innerText =
-      `Non sei ancora pronto. Hai solo ${wordsWritten.toLocaleString()} parole`;
+      `✲ Non sei ancora pronto. Hai solo ${wordsWritten.toLocaleString()} parole`;
   }
 }
 
@@ -430,6 +483,9 @@ function stopMinigame(message, lost = false) {
     statusHP = Math.max(1, statusHP - 1);
     statusMotivation = Math.max(1, statusMotivation - 1);
     statusAnxiety = Math.min(10, statusAnxiety + 1);
+  }
+  if (lost) {
+    boxShakeTimer = BOX_SHAKE_DURATION;
   }
   minigameActive = false;
   minigameType = null;
@@ -478,13 +534,13 @@ function updateMinigame(deltaTime) {
       if (checkPaperCollision(paper)) {
         if (paper.color === "green") {
           papersCaught += 1;
-          if (papersCaught >= 3) {
+          if (papersCaught >= 6) {
             ricercaWins += 1;
-            stopMinigame("Ti sei convinta di aver capito gli articoli che hai studiato");
+            stopMinigame("✲ Ti sei convinta di aver capito gli articoli che hai studiato");
             break;
           }
         } else {
-          stopMinigame("L'articolo che hai letto per tutto il giorno era inutile...", true);
+          stopMinigame("✲ L'articolo che hai letto per tutto il giorno era inutile...", true);
           break;
         }
         papers.splice(i, 1);
@@ -516,9 +572,15 @@ function updateMinigame(deltaTime) {
         if (lettersCaught >= 20) {
           const addedWords = calculateWordsFromWriting();
           wordsWritten += addedWords;
-          stopMinigame(
-            `Oggi hai scritto ${addedWords.toLocaleString()} parole! Totale: ${wordsWritten.toLocaleString()}.`
+          if (addedWords === 0) {
+            stopMinigame(
+              `✲ Non hai niente su cui scrivere...`
+            );
+          } else {  
+            stopMinigame(
+            `✲ Oggi hai scritto ${addedWords.toLocaleString()} parole! Totale: ${wordsWritten.toLocaleString()}.`
           );
+          }
           break;
         }
       }
@@ -537,7 +599,7 @@ function getPlayerCollisionBounds(shrinkFactor = 0) {
 }
 
 function checkPaperCollision(paper) {
-  const playerBounds = getPlayerCollisionBounds(0.75);
+  const playerBounds = getPlayerCollisionBounds(0.6);
   const playerLeft = playerBounds.left;
   const playerRight = playerBounds.right;
   const playerTop = playerBounds.top;
@@ -686,6 +748,16 @@ function update(deltaTime) {
   player.y = Math.max(box.y, Math.min(box.y + box.h, player.y));
 
   updateMinigame(deltaTime);
+  if (boxShakeTimer > 0) {
+    boxShakeTimer = Math.max(0, boxShakeTimer - deltaTime);
+  }
+  if (coffeeShakeLevel > 0) {
+    coffeeShakeDecayTimer -= deltaTime;
+    if (coffeeShakeDecayTimer <= 0) {
+      coffeeShakeLevel = Math.max(0, coffeeShakeLevel - 1);
+      coffeeShakeDecayTimer += COFFEE_SHAKE_DECAY_INTERVAL;
+    }
+  }
 }
 
 /* =========================
@@ -693,9 +765,12 @@ function update(deltaTime) {
 ========================= */
 
 function drawArena() {
-  ctx.strokeStyle = "white";
+  const shakeFactor = boxShakeTimer > 0 ? boxShakeTimer / BOX_SHAKE_DURATION : 0;
+  const offsetX = boxShakeTimer > 0 ? (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor : 0;
+  const offsetY = boxShakeTimer > 0 ? (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor : 0;
+  ctx.strokeStyle = boxShakeTimer > 0 ? "red" : "white";
   ctx.lineWidth = 4;
-  ctx.strokeRect(box.x, box.y, box.w, box.h);
+  ctx.strokeRect(box.x + offsetX, box.y + offsetY, box.w, box.h);
 }
 
 /* =========================
@@ -706,8 +781,8 @@ function drawPlayer() {
   let drawX = player.x - player.size / 2;
   let drawY = player.y - player.size / 3;
 
-  if (coffeeDrank > 0) {
-    const maxShake = coffeeDrank * coffeeShakePerCup;
+  if (coffeeShakeLevel > 0) {
+    const maxShake = coffeeShakeLevel * coffeeShakePerCup;
     drawX += (Math.random() - 0.5) * maxShake;
     drawY += (Math.random() - 0.5) * maxShake;
   }
@@ -789,31 +864,6 @@ function loop(timestamp) {
   requestAnimationFrame(loop);
 }
 
-/* =========================
-   BUTTON ACTIONS
-========================= */
-
-function fight() {
-  document.getElementById("text").innerText =
-    "You try to FIGHT... but the thesis is unbreakable.";
-}
-
-function act() {
-  document.getElementById("text").innerText =
-    "You ACT: you procrastinate strategically.";
-}
-
-function item() {
-  coffeeDrank += 1;
-  player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
-  document.getElementById("text").innerText =
-    `Bevi il caffè delle macchinette, fa schifo`;
-}
-
-function mercy() {
-  document.getElementById("text").innerText =
-    "The Laurea is not ready to forgive yet.";
-}
 
 /* =========================
    INIT
