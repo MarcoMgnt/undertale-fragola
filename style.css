@@ -26,7 +26,7 @@ canvas {
 
 #menu {
   position: absolute;
-  bottom: 80px;
+  bottom: 32px;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -38,9 +38,9 @@ button {
   background: black;
   color: white;
   border: 2px solid white;
-  padding: 10px 20px;
+  padding: 8px 16px;
   font-family: monospace;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -108,9 +108,11 @@ button:active {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 140px;
+  bottom: 108px;
+  width: min(90vw, 380px);
+  justify-content: center;
   display: flex;
-  gap: 18px;
+  gap: 12px;
   align-items: center;
   z-index: 15;
   pointer-events: none;
@@ -142,3 +144,25 @@ button:active {
 .status-low { background: rgba(0,128,0,0.15); color: #7CFC00; }
 .status-medium { background: rgba(255,165,0,0.08); color: orange; }
 .status-high { background: rgba(255,0,0,0.08); color: #ff6b6b; }
+
+@media (max-width: 520px) {
+  #menu {
+    bottom: 16px;
+    gap: 6px;
+  }
+
+  #status-bar {
+    bottom: 88px;
+    width: min(90vw, 320px);
+    gap: 8px;
+  }
+
+  #status-bar .status-item {
+    gap: 4px;
+  }
+
+  button {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+}
