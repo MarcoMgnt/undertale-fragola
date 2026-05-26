@@ -24,8 +24,7 @@ function resize() {
   boss.x = canvas.width / 2;
   boss.y = canvas.height * 0.15;
 
-  updateBoxMenuPosition();
-}
+  updateBoxMenuPosition();  updateUITextPosition();}
 
 window.addEventListener("resize", resize);
 
@@ -35,7 +34,7 @@ window.addEventListener("resize", resize);
 
 const baseSpeed = 4;
 const coffeeSpeedBoost = 1;
-const coffeeShakePerCup = 2;
+const coffeeShakePerCup = 1.5;
 let coffeeDrank = 0;
 
 let animationTime = 0;
@@ -54,6 +53,7 @@ const strawberryImg = new Image();
 strawberryImg.src = "assets/strawberry.png";
 
 const boxMenu = document.getElementById("box-menu");
+const ui = document.getElementById("ui");
 const menuButtons = {
   fight: document.getElementById("fight-button"),
   act: document.getElementById("act-button"),
@@ -132,6 +132,14 @@ function updateBoxMenuPosition() {
   boxMenu.style.width = `${box.w}px`;
   boxMenu.style.height = `${box.h}px`;
   boxMenu.style.padding = `${padding}px`;
+}
+
+function updateUITextPosition() {
+  if (!ui) return;
+  const padding = 20;
+  ui.style.left = `${box.x + padding}px`;
+  ui.style.top = `${box.y + box.h - 60}px`;
+  ui.style.width = `${Math.max(200, box.w - padding * 2)}px`;
 }
 
 function renderMenuOptions() {
