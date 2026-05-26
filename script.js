@@ -17,7 +17,7 @@ function resize() {
   canvas.height = window.innerHeight;
 
   box.x = canvas.width * 0.3;
-  box.y = canvas.height * 0.25;
+  box.y = canvas.height * 0.4;
   box.w = canvas.width * 0.4;
   box.h = canvas.height * 0.35;
 
@@ -37,6 +37,11 @@ const baseSpeed = 5;
 const coffeeSpeedBoost = 2;
 const coffeeShakePerCup = 2;
 let coffeeDrank = 0;
+
+let animationTime = 0;
+const bossBobbingSpeed = 0.015;
+const bossBobbingHeight = 10;
+const bossRotationAmount = 0.075;
 
 const player = {
   x: 0,
@@ -62,7 +67,8 @@ function updateBoxMenuPosition() {
   const padding = 20;
   boxMenu.style.left = `${box.x + padding}px`;
   boxMenu.style.top = `${box.y + padding}px`;
-  boxMenu.style.width = `${Math.min(260, box.w - padding * 2)}px`;
+  boxMenu.style.width = `${box.w - padding * 2}px`;
+  boxMenu.style.maxHeight = `${box.h - padding * 2}px`;
 }
 
 function renderMenuOptions() {
@@ -160,6 +166,8 @@ canvas.addEventListener("touchend", () => {
 ========================= */
 
 function update() {
+  animationTime += bossBobbingSpeed;
+
   // keyboard movement
   if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
   if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
@@ -214,18 +222,31 @@ function drawPlayer() {
 ========================= */
 
 function drawBoss() {
+  const bobOffset = Math.sin(animationTime) * bossBobbingHeight;
+  const rotation = Math.sin(animationTime * 0.5) * bossRotationAmount;
+  
+  const bossScreenX = boss.x;
+  const bossScreenY = boss.y + bobOffset;
+
+  ctx.save();
+  ctx.translate(bossScreenX, bossScreenY);
+  ctx.rotate(rotation);
+  ctx.translate(-bossScreenX, -bossScreenY);
+
   if (bossImg.complete) {
     ctx.drawImage(
       bossImg,
-      boss.x - boss.size / 2,
-      boss.y - boss.size / 2,
+      bossScreenX - boss.size / 2,
+      bossScreenY - boss.size / 3,
       boss.size,
       boss.size
     );
   } else {
     ctx.fillStyle = "white";
-    ctx.fillRect(boss.x - 40, boss.y - 40, 80, 80);
+    ctx.fillRect(bossScreenX - 40, bossScreenY - 40, 80, 80);
   }
+
+  ctx.restore();
 }
 
 /* =========================
