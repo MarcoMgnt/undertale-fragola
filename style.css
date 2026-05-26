@@ -76,7 +76,7 @@ button:active {
 
 #box-menu {
   position: absolute;
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(0, 0, 0, 0);
   color: white;
   padding: 16px;
   box-sizing: border-box;
@@ -137,7 +137,7 @@ button:active {
 }
 
 #status-bar .status-value {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.06*0);
   padding: 4px 8px;
   border-radius: 6px;
   min-width: 38px;
@@ -145,12 +145,12 @@ button:active {
   pointer-events: auto;
 }
 
-.status-low { background: rgba(0,128,0,0.15); color: #7CFC00; }
-.status-medium { background: rgba(255,165,0,0.08); color: orange; }
-.status-high { background: rgba(255,0,0,0.08); color: #ff6b6b; }
+.status-low { background: rgba(0,128,0,0.15*0); color: #7CFC00; }
+.status-medium { background: rgba(255,165,0,0.08*0); color: orange; }
+.status-high { background: rgba(255,0,0,0.08*0); color: #ff6b6b; }
 
-#status-motivation.status-low { background: rgba(255,0,0,0.15); color: #ff6b6b; }
-#status-motivation.status-high { background: rgba(0,128,0,0.15); color: #7CFC00; }
+#status-motivation.status-low { background: rgba(255,0,0,0.15*0); color: #ff6b6b; }
+#status-motivation.status-high { background: rgba(0,128,0,0.15*0); color: #7CFC00; }
 
 @media (max-width: 520px) {
   #menu {

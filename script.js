@@ -38,7 +38,7 @@ const coffeeShakePerCup = 1.5;
 let coffeeDrank = 0;
 
 let animationTime = 0;
-const bossBobbingSpeed = 0.9;
+const bossBobbingSpeed = 0.9*2;
 const bossBobbingHeight = 10;
 const bossRotationAmount = 0.075;
 let lastTimestamp = 0;
@@ -62,9 +62,9 @@ const menuButtons = {
   mercy: document.getElementById("mercy-button")
 };
 const menuOptions = {
-  fight: ["✲ Rircerca", "✲ Scrivi la tesi"],
-  act: ["✲ Chiedi aiuto al prof", "✲ Chiedi aiuto ai colleghi"],
-  item: ["✲ Caffè", "✲ Fragole", "✲ backup tesi"],
+  fight: ["✲ Raccogli le fragole", "✲ Rircerca", "✲ Scrivi la tesi"],
+  act: ["✲ Manda la tesi al prof"],
+  item: ["✲ Caffè", "✲ Fragole"],
   mercy: ["✲ Abbandona", "✲ Accettazione", "✲ Consegna tesi"]
 };
 
@@ -87,6 +87,15 @@ let minigameSpawnCooldown = 0;
 let letterSpawnCooldown = 0;
 let ricercaWins = 0;
 let wordsWritten = 0;
+// Fragole minigame state
+let pillars = [];
+let strawberries = [];
+let strawberriesCollected = 0;
+let fragoleSpawnCooldown = 0;
+let fragoleWins = 0;
+const FRAGOLE_TARGET = 16;
+let targetParole = 100000;
+let tesicorretta = false
 
 function levelFromValue(v) {
   const n = Math.max(1, Math.min(10, Math.round(v)));
@@ -188,12 +197,20 @@ function closeMenu() {
 function selectMenuOption(type, option) {
   selectedOption = option;
   renderMenuOptions();
-  if (type === "fight" && option === "✲ Rircerca") {
+  if (type === "fight" && option === "✲ Raccogli le fragole") {
+    startFragoleMinigame();
+  } else if (type === "fight" && option === "✲ Rircerca") {
     startRicercaMinigame();
   } else if (type === "fight" && option === "✲ Scrivi la tesi") {
     startWritingMinigame();
   } else if (type === "item" && option === "✲ Caffè") {
     drinkCoffee();
+  } else if (type === "item" && option === "✲ Fragole") {
+    mangiaFragole();
+  } else if (type === "mercy" && option === "✲ Abbandona") {
+    abbandona();
+  } else if (type === "mercy" && option === "✲ Accettazione") {
+    accettazione();
   } else if (type === "mercy" && option === "✲ Consegna tesi") {
     submitThesis();
   } else {
@@ -204,9 +221,27 @@ function selectMenuOption(type, option) {
 
 function drinkCoffee() {
   coffeeDrank += 1;
+  statusMotivation = Math.min(10, statusMotivation + 1);
+  statusAnxiety = Math.min(10, statusAnxiety + 1);
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
-    `You drink coffee! Speed is now ${player.speed}. Jitter level: ${coffeeDrank}.`;
+    `Bevi il caffè delle macchinette, fa schifo ma ti senti più sveglia`;
+}
+
+
+function mangiaFragole() {
+  if (strawberriesCollected <= 0) {
+    document.getElementById("text").innerText =
+      `Non hai fragole da mangiare! Raccoglile prima`;
+    return;
+  }
+  strawberriesCollected -= 1;
+  statusHP = Math.min(10, statusHP + 2);
+  statusMotivation = Math.min(10, statusMotivation + 1);
+  statusAnxiety = Math.max(1, statusAnxiety - 1);
+  player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
+  document.getElementById("text").innerText =
+    `Mangi le fragole che avresti dovuto analizzare...`;
 }
 
 function startRicercaMinigame() {
@@ -226,6 +261,124 @@ function startMinigame(type) {
   lettersCaught = 0;
   minigameSpawnCooldown = 0;
   letterSpawnCooldown = 0;
+  // initialize fragole state when starting any minigame
+  pillars = [];
+  strawberries = [];
+  strawberriesCollected = 0;
+  fragoleSpawnCooldown = 0;
+}
+
+function startFragoleMinigame() {
+  startMinigame("fragole");
+}
+
+function spawnPillar() {
+  const pillarWidth = 8;
+  const height = 60 + Math.random() * (box.h * 0.5);
+  const pillar = {
+    x: box.x + box.w + pillarWidth,
+    width: pillarWidth,
+    height: height,
+    y: box.y + box.h - height,
+    speed: 140 + Math.random() * 40
+  };
+  // add two strawberries near the top corners of the pillar (fixed near top of box)
+  const sSize = 28;
+  const leftBerry = { side: 'left', size: sSize, pillarRef: pillar, y: box.y + box.h - height + sSize/2, x: 0 };
+  const rightBerry = { side: 'right', size: sSize, pillarRef: pillar, y: box.y + box.h - height + sSize/2, x: 0 };
+  pillars.push(pillar);
+  strawberries.push(leftBerry, rightBerry);
+}
+
+function updateFragole(deltaTime) {
+  fragoleSpawnCooldown -= deltaTime;
+  if (fragoleSpawnCooldown <= 0) {
+    spawnPillar();
+    fragoleSpawnCooldown = 1.0 + Math.random() * 0.8;
+  }
+
+  for (let i = pillars.length - 1; i >= 0; i--) {
+    const p = pillars[i];
+    p.x -= p.speed * deltaTime;
+    if (p.x + p.width < box.x) {
+      // remove pillar and any associated strawberries
+      pillars.splice(i, 1);
+      for (let j = strawberries.length - 1; j >= 0; j--) {
+        if (strawberries[j].pillarRef === p) strawberries.splice(j, 1);
+      }
+    }
+  }
+
+  // move strawberries with their pillar
+  for (let i = strawberries.length - 1; i >= 0; i--) {
+    const s = strawberries[i];
+    const p = s.pillarRef;
+    s.x = p.x + (s.side === 'left' ? -(p.width / 2 + 20) : (p.width / 2 + 20));
+    s.y = s.y; // fixed near top of box
+
+    // simple collision check with player
+    const pb = getPlayerCollisionBounds(0.2);
+    const sLeft = s.x - s.size / 2;
+    const sRight = s.x + s.size / 2;
+    const sTop = s.y - s.size / 2;
+    const sBottom = s.y + s.size / 2;
+    if (!(pb.right < sLeft || pb.left > sRight || pb.bottom < sTop || pb.top > sBottom)) {
+      strawberriesCollected += 1;
+      strawberries.splice(i, 1);
+      if (strawberriesCollected >= FRAGOLE_TARGET) {
+        // increment fragoleWins which will boost writing later
+        fragoleWins += 1;
+        stopMinigame(`Proprio un bel raccolto di fragole!`);
+        return;
+      }
+    }
+  }
+
+  // check pillar collisions with player
+  for (let i = 0; i < pillars.length; i++) {
+    const p = pillars[i];
+    const pb = getPlayerCollisionBounds(0.2);
+    const pillarLeft = p.x - p.width / 2;
+    const pillarRight = p.x + p.width / 2;
+    const pillarTop = p.y;
+    const pillarBottom = box.y + box.h;
+    if (!(pb.right < pillarLeft || pb.left > pillarRight || pb.bottom < pillarTop || pb.top > pillarBottom)) {
+      stopMinigame("Hai rotto una pianta!", true);
+      return;
+    }
+  }
+}
+
+function drawFragole(ctx) {
+  // draw pillars (from bottom)
+  pillars.forEach(p => {
+    ctx.fillStyle = "#2c6f2c";
+    ctx.fillRect(p.x - p.width / 2, p.y, p.width, p.height);
+  });
+
+  // draw strawberries using the player image rotated
+  strawberries.forEach(s => {
+    const angle = s.side === 'left' ? Math.PI / 4 : -Math.PI / 4;
+    if (strawberryImg.complete) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(angle);
+      ctx.drawImage(strawberryImg, -s.size / 2, -s.size / 2, s.size, s.size);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.ellipse(s.x, s.y, s.size / 2, s.size / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "white";
+      ctx.stroke();
+    }
+  });
+
+  // HUD: collected
+  ctx.fillStyle = "white";
+  ctx.font = "16px sans-serif";
+  ctx.fillText(`Fragole: ${strawberriesCollected}/${FRAGOLE_TARGET}`, box.x + 10, box.y + 20);
 }
 
 function calculateWordsFromWriting() {
@@ -233,14 +386,35 @@ function calculateWordsFromWriting() {
   const motivationBonus = statusMotivation * 220;
   const anxietyBonus = statusAnxiety * 140;
   const randomBonus = Math.round(Math.random() * 200);
-  return ricercaWins*(ricercaBonus + motivationBonus + anxietyBonus + randomBonus*coffeeDrank);
+  const base = ricercaWins * (ricercaBonus + motivationBonus + anxietyBonus + randomBonus * coffeeDrank);
+  const fragoleMultiplier = fragoleWins * 1; // each fragole win gives +20% writing output
+  return Math.round(base * fragoleMultiplier);
+}
+
+function abbandona()  {
+  statusHP = Math.max(1, statusHP - 2);
+  statusMotivation = Math.max(1, statusMotivation - 3);
+  statusAnxiety = Math.min(10, statusAnxiety + 3);
+  document.getElementById("text").innerText =
+    `Hai deciso di abbandonare... ma ormai non puoi tornare indietro`;
+}
+
+function accettazione() {
+  targetParole = 10000;
+  statusHP = Math.max(1, statusHP - 1);
+  statusMotivation = Math.max(1, statusMotivation - 2);
+  statusAnxiety = Math.max(1, statusAnxiety - 3);
+  document.getElementById("text").innerText =
+    `Accetti che la tesi non sara mai perfetta, la fine è in vista`;
 }
 
 function submitThesis() {
-  if (wordsWritten >= 50000) {
+  if (wordsWritten >= targetParole && tesicorretta === true) {
     document.getElementById("text").innerText =
       `Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. Hai vinto!`;
   } else {
+    statusMotivation = Math.max(1, statusMotivation - 1);
+    statusAnxiety = Math.min(10, statusAnxiety + 1);
     document.getElementById("text").innerText =
       `Non sei ancora pronto. Hai solo ${wordsWritten.toLocaleString()} parole`;
   }
@@ -252,7 +426,11 @@ function stopMinigame(message, lost = false) {
     statusMotivation = Math.max(1, statusMotivation - 1);
     statusAnxiety = Math.min(10, statusAnxiety + 1);
   }
-
+  if (minigameType === "fragole" && lost) {
+    statusHP = Math.max(1, statusHP - 1);
+    statusMotivation = Math.max(1, statusMotivation - 1);
+    statusAnxiety = Math.min(10, statusAnxiety + 1);
+  }
   minigameActive = false;
   minigameType = null;
   papers = [];
@@ -279,6 +457,11 @@ function spawnPaper() {
 
 function updateMinigame(deltaTime) {
   if (!minigameActive) return;
+
+  if (minigameType === "fragole") {
+    updateFragole(deltaTime);
+    return;
+  }
 
   if (minigameType === "ricerca") {
     minigameSpawnCooldown -= deltaTime;
@@ -343,7 +526,7 @@ function updateMinigame(deltaTime) {
   }
 }
 
-function getPlayerCollisionBounds(shrinkFactor = 0.4) {
+function getPlayerCollisionBounds(shrinkFactor = 0) {
   const halfSize = (player.size / 2) * (1 - shrinkFactor);
   return {
     left: player.x - halfSize,
@@ -403,6 +586,11 @@ function checkLetterCollision(letter) {
 
 function drawMinigame() {
   if (!minigameActive) return;
+
+  if (minigameType === "fragole") {
+    drawFragole(ctx);
+    return;
+  }
 
   papers.forEach((paper) => {
     ctx.fillStyle = paper.color;
