@@ -32,15 +32,16 @@ window.addEventListener("resize", resize);
    PLAYER (strawberry)
 ========================= */
 
-const baseSpeed = 4;
-const coffeeSpeedBoost = 1;
+const baseSpeed = 240;
+const coffeeSpeedBoost = 60;
 const coffeeShakePerCup = 1.5;
 let coffeeDrank = 0;
 
 let animationTime = 0;
-const bossBobbingSpeed = 0.015;
+const bossBobbingSpeed = 0.9;
 const bossBobbingHeight = 10;
 const bossRotationAmount = 0.075;
+let lastTimestamp = 0;
 
 const player = {
   x: 0,
@@ -64,7 +65,7 @@ const menuOptions = {
   fight: ["✲ Rircerca", "✲ Scrivi la tesi"],
   act: ["✲ Chiedi aiuto al prof", "✲ Chiedi aiuto ai colleghi"],
   item: ["✲ Caffè", "✲ Fragole", "✲ backup tesi"],
-  mercy: ["✲ Arrenditi", "✲ Accettazione", "✲ Consegna tesi"]
+  mercy: ["✲ Abbandona", "✲ Accettazione", "✲ Consegna tesi"]
 };
 
 let activeMenu = null;
@@ -218,13 +219,15 @@ function startMinigame(type) {
   lettersCaught = 0;
   minigameSpawnCooldown = 0;
   letterSpawnCooldown = 0;
-  document.getElementById("text").innerText =
-    type === "ricerca"
-      ? "Studia la letteratura scientifica"
-      : "Scrivi la tesi! Cogli 20 lettere prima che spariscano.";
 }
 
-function stopMinigame(message) {
+function stopMinigame(message, lost = false) {
+  if (minigameType === "ricerca" && lost) {
+    statusHP = Math.max(1, statusHP - 1);
+    statusMotivation = Math.max(1, statusMotivation - 1);
+    statusAnxiety = Math.min(10, statusAnxiety + 1);
+  }
+
   minigameActive = false;
   minigameType = null;
   papers = [];
@@ -241,7 +244,7 @@ function spawnPaper() {
     y: box.y*0 - 40,
     width,
     height: 40,
-    speed: 0.5 + Math.random() * 0.25,
+    speed: (2 + Math.random() * 1) * 60,
     amplitude: 45 + Math.random() * 10,
     phase: Math.random() * Math.PI * 2,
     color: Math.random() < 0.33 ? "green" : "red"
@@ -249,32 +252,30 @@ function spawnPaper() {
   papers.push(paper);
 }
 
-function updateMinigame() {
+function updateMinigame(deltaTime) {
   if (!minigameActive) return;
 
   if (minigameType === "ricerca") {
-    minigameSpawnCooldown -= 1;
+    minigameSpawnCooldown -= deltaTime;
     if (minigameSpawnCooldown <= 0) {
       spawnPaper();
-      minigameSpawnCooldown = 125 + Math.round(Math.random() * 30);
+      minigameSpawnCooldown = 0.6 + Math.random() * 0.4;
     }
 
     for (let i = papers.length - 1; i >= 0; i -= 1) {
       const paper = papers[i];
-      paper.y += paper.speed;
+      paper.y += paper.speed * deltaTime;
       paper.x = paper.baseX + Math.sin((paper.y * 0.08) + paper.phase) * paper.amplitude;
 
       if (checkPaperCollision(paper)) {
         if (paper.color === "green") {
           papersCaught += 1;
-          document.getElementById("text").innerText =
-            `Green paper caught! ${papersCaught}/3.`;
-          if (papersCaught >= 6) {
+          if (papersCaught >= 5) {
             stopMinigame("Ti sei convinta di aver capito gli articoli che hai studiato");
             break;
           }
         } else {
-          stopMinigame("L'articolo che hai letto per tutto il giorno era inutile...");
+          stopMinigame("L'articolo che hai letto per tutto il giorno era inutile...", true);
           break;
         }
         papers.splice(i, 1);
@@ -286,15 +287,15 @@ function updateMinigame() {
       }
     }
   } else if (minigameType === "scrivi") {
-    letterSpawnCooldown -= 1;
+    letterSpawnCooldown -= deltaTime;
     if (letterSpawnCooldown <= 0) {
       spawnLetter();
-      letterSpawnCooldown = 30 + Math.round(Math.random() * 20);
+      letterSpawnCooldown = 0.5 + Math.random() * 0.3;
     }
 
     for (let i = letters.length - 1; i >= 0; i -= 1) {
       const letter = letters[i];
-      letter.ttl -= 1;
+      letter.ttl -= deltaTime;
       if (letter.ttl <= 0) {
         letters.splice(i, 1);
         continue;
@@ -302,11 +303,9 @@ function updateMinigame() {
 
       if (checkLetterCollision(letter)) {
         lettersCaught += 1;
-        document.getElementById("text").innerText =
-          `Lettere catturate: ${lettersCaught}/20.`;
         letters.splice(i, 1);
         if (lettersCaught >= 20) {
-          stopMinigame("Hai scritto la tesi! 20 lettere catturate.");
+          stopMinigame("Hai scritto 200 parole e cancellate 180");
           break;
         }
       }
@@ -314,11 +313,22 @@ function updateMinigame() {
   }
 }
 
+function getPlayerCollisionBounds(shrinkFactor = 0.4) {
+  const halfSize = (player.size / 2) * (1 - shrinkFactor);
+  return {
+    left: player.x - halfSize,
+    right: player.x + halfSize,
+    top: player.y - halfSize,
+    bottom: player.y + halfSize
+  };
+}
+
 function checkPaperCollision(paper) {
-  const playerLeft = player.x - player.size / 2;
-  const playerRight = player.x + player.size / 2;
-  const playerTop = player.y - player.size / 2;
-  const playerBottom = player.y + player.size / 2;
+  const playerBounds = getPlayerCollisionBounds(0.75);
+  const playerLeft = playerBounds.left;
+  const playerRight = playerBounds.right;
+  const playerTop = playerBounds.top;
+  const playerBottom = playerBounds.bottom;
 
   const paperLeft = paper.x - paper.width / 2;
   const paperRight = paper.x + paper.width / 2;
@@ -339,7 +349,7 @@ function spawnLetter() {
   const size = 30;
   const x = box.x + 10 + Math.random() * (box.w - size - 20);
   const y = box.y + 10 + Math.random() * (box.h - size - 20);
-  letters.push({ x, y, char, size, ttl: 80 + Math.round(Math.random() * 40) });
+  letters.push({ x, y, char, size, ttl: 1.5 + Math.random() * 0.8 });
 }
 
 function checkLetterCollision(letter) {
@@ -382,11 +392,11 @@ function drawMinigame() {
   });
 
   letters.forEach((letter) => {
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.fillRect(letter.x, letter.y, letter.size, letter.size);
-    ctx.strokeStyle = "white";
-    ctx.strokeRect(letter.x, letter.y, letter.size, letter.size);
     ctx.fillStyle = "black";
+    ctx.fillRect(letter.x, letter.y, letter.size, letter.size);
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(letter.x, letter.y, letter.size, letter.size);
+    ctx.fillStyle = "white";
     ctx.font = "bold 20px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -444,20 +454,20 @@ canvas.addEventListener("touchend", () => {
    UPDATE LOGIC
 ========================= */
 
-function update() {
-  animationTime += bossBobbingSpeed;
+function update(deltaTime) {
+  animationTime += bossBobbingSpeed * deltaTime;
 
   // keyboard movement
-  if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-  if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
-  if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
-  if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+  if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed * deltaTime;
+  if (keys["ArrowDown"] || keys["s"]) player.y += player.speed * deltaTime;
+  if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed * deltaTime;
+  if (keys["ArrowRight"] || keys["d"]) player.x += player.speed * deltaTime;
 
   // clamp inside arena
   player.x = Math.max(box.x, Math.min(box.x + box.w, player.x));
   player.y = Math.max(box.y, Math.min(box.y + box.h, player.y));
 
-  updateMinigame();
+  updateMinigame(deltaTime);
 }
 
 /* =========================
@@ -549,8 +559,12 @@ function draw() {
    LOOP
 ========================= */
 
-function loop() {
-  update();
+function loop(timestamp) {
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.05);
+  lastTimestamp = timestamp;
+
+  update(deltaTime);
   draw();
   updatePlayerSprite();
   renderStatusBar();
@@ -591,4 +605,4 @@ resize();
 player.x = canvas.width / 2;
 player.y = canvas.height / 2;
 
-loop();
+requestAnimationFrame(loop);
