@@ -85,6 +85,8 @@ let letters = [];
 let lettersCaught = 0;
 let minigameSpawnCooldown = 0;
 let letterSpawnCooldown = 0;
+let ricercaWins = 0;
+let wordsWritten = 0;
 
 function levelFromValue(v) {
   const n = Math.max(1, Math.min(10, Math.round(v)));
@@ -116,6 +118,9 @@ function renderStatusBar() {
     anxEl.classList.remove("status-low", "status-medium", "status-high");
     anxEl.classList.add(`status-${level}`);
   }
+
+  const wordsEl = document.getElementById("status-words");
+  if (wordsEl) wordsEl.innerText = wordsWritten.toLocaleString();
 }
 
 const playerSprite = document.getElementById("player-sprite");
@@ -189,6 +194,8 @@ function selectMenuOption(type, option) {
     startWritingMinigame();
   } else if (type === "item" && option === "✲ Caffè") {
     drinkCoffee();
+  } else if (type === "mercy" && option === "✲ Consegna tesi") {
+    submitThesis();
   } else {
     document.getElementById("text").innerText = `Selected ${option}.`;
   }
@@ -219,6 +226,24 @@ function startMinigame(type) {
   lettersCaught = 0;
   minigameSpawnCooldown = 0;
   letterSpawnCooldown = 0;
+}
+
+function calculateWordsFromWriting() {
+  const ricercaBonus = 2000;
+  const motivationBonus = statusMotivation * 220;
+  const anxietyBonus = statusAnxiety * 140;
+  const randomBonus = Math.round(Math.random() * 200);
+  return ricercaWins*(ricercaBonus + motivationBonus + anxietyBonus + randomBonus*coffeeDrank);
+}
+
+function submitThesis() {
+  if (wordsWritten >= 50000) {
+    document.getElementById("text").innerText =
+      `Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. Hai vinto!`;
+  } else {
+    document.getElementById("text").innerText =
+      `Non sei ancora pronto. Hai solo ${wordsWritten.toLocaleString()} parole`;
+  }
 }
 
 function stopMinigame(message, lost = false) {
@@ -270,7 +295,8 @@ function updateMinigame(deltaTime) {
       if (checkPaperCollision(paper)) {
         if (paper.color === "green") {
           papersCaught += 1;
-          if (papersCaught >= 5) {
+          if (papersCaught >= 3) {
+            ricercaWins += 1;
             stopMinigame("Ti sei convinta di aver capito gli articoli che hai studiato");
             break;
           }
@@ -305,7 +331,11 @@ function updateMinigame(deltaTime) {
         lettersCaught += 1;
         letters.splice(i, 1);
         if (lettersCaught >= 20) {
-          stopMinigame("Hai scritto 200 parole e cancellate 180");
+          const addedWords = calculateWordsFromWriting();
+          wordsWritten += addedWords;
+          stopMinigame(
+            `Oggi hai scritto ${addedWords.toLocaleString()} parole! Totale: ${wordsWritten.toLocaleString()}.`
+          );
           break;
         }
       }
@@ -589,7 +619,7 @@ function item() {
   coffeeDrank += 1;
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
-    `You drink coffee! Speed is now ${player.speed}. Jitter level: ${coffeeDrank}.`;
+    `Bevi il caffè delle macchinette, fa schifo`;
 }
 
 function mercy() {

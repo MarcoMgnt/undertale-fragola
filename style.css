@@ -149,6 +149,9 @@ button:active {
 .status-medium { background: rgba(255,165,0,0.08); color: orange; }
 .status-high { background: rgba(255,0,0,0.08); color: #ff6b6b; }
 
+#status-motivation.status-low { background: rgba(255,0,0,0.15); color: #ff6b6b; }
+#status-motivation.status-high { background: rgba(0,128,0,0.15); color: #7CFC00; }
+
 @media (max-width: 520px) {
   #menu {
     bottom: 16px;
