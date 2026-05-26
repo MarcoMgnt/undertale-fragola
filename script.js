@@ -75,6 +75,16 @@ let statusHP = 10; // 1..10
 let statusMotivation = 6; // 1..10
 let statusAnxiety = 2; // 1..10
 
+// Minigame state
+let minigameActive = false;
+let minigameType = null;
+let papers = [];
+let papersCaught = 0;
+let letters = [];
+let lettersCaught = 0;
+let minigameSpawnCooldown = 0;
+let letterSpawnCooldown = 0;
+
 function levelFromValue(v) {
   const n = Math.max(1, Math.min(10, Math.round(v)));
   if (n <= 3) return "low";
@@ -138,7 +148,7 @@ function updateUITextPosition() {
   if (!ui) return;
   const padding = 20;
   ui.style.left = `${box.x + padding}px`;
-  ui.style.top = `${box.y + box.h - 60}px`;
+  ui.style.top = `${box.y + padding}px`;
   ui.style.width = `${Math.max(200, box.w - padding * 2)}px`;
 }
 
@@ -154,10 +164,12 @@ function renderMenuOptions() {
 }
 
 function openMenu(type) {
+  if (minigameActive) return;
   activeMenu = type;
   setActiveMenuButton(type);
   updateBoxMenuPosition();
   renderMenuOptions();
+  document.getElementById("text").innerText = "";
   boxMenu.classList.remove("hidden");
 }
 
@@ -170,7 +182,11 @@ function closeMenu() {
 function selectMenuOption(type, option) {
   selectedOption = option;
   renderMenuOptions();
-  if (type === "item" && option === "✲ Caffè") {
+  if (type === "fight" && option === "✲ Rircerca") {
+    startRicercaMinigame();
+  } else if (type === "fight" && option === "✲ Scrivi la tesi") {
+    startWritingMinigame();
+  } else if (type === "item" && option === "✲ Caffè") {
     drinkCoffee();
   } else {
     document.getElementById("text").innerText = `Selected ${option}.`;
@@ -183,6 +199,199 @@ function drinkCoffee() {
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
     `You drink coffee! Speed is now ${player.speed}. Jitter level: ${coffeeDrank}.`;
+}
+
+function startRicercaMinigame() {
+  startMinigame("ricerca");
+}
+
+function startWritingMinigame() {
+  startMinigame("scrivi");
+}
+
+function startMinigame(type) {
+  minigameActive = true;
+  minigameType = type;
+  papers = [];
+  letters = [];
+  papersCaught = 0;
+  lettersCaught = 0;
+  minigameSpawnCooldown = 0;
+  letterSpawnCooldown = 0;
+  document.getElementById("text").innerText =
+    type === "ricerca"
+      ? "Studia la letteratura scientifica"
+      : "Scrivi la tesi! Cogli 20 lettere prima che spariscano.";
+}
+
+function stopMinigame(message) {
+  minigameActive = false;
+  minigameType = null;
+  papers = [];
+  letters = [];
+  document.getElementById("text").innerText = message;
+}
+
+function spawnPaper() {
+  const width = 32;
+  const baseX = box.x + width / 2 + Math.random() * (box.w - width);
+  const paper = {
+    baseX,
+    x: baseX,
+    y: box.y*0 - 40,
+    width,
+    height: 40,
+    speed: 0.5 + Math.random() * 0.25,
+    amplitude: 45 + Math.random() * 10,
+    phase: Math.random() * Math.PI * 2,
+    color: Math.random() < 0.33 ? "green" : "red"
+  };
+  papers.push(paper);
+}
+
+function updateMinigame() {
+  if (!minigameActive) return;
+
+  if (minigameType === "ricerca") {
+    minigameSpawnCooldown -= 1;
+    if (minigameSpawnCooldown <= 0) {
+      spawnPaper();
+      minigameSpawnCooldown = 125 + Math.round(Math.random() * 30);
+    }
+
+    for (let i = papers.length - 1; i >= 0; i -= 1) {
+      const paper = papers[i];
+      paper.y += paper.speed;
+      paper.x = paper.baseX + Math.sin((paper.y * 0.08) + paper.phase) * paper.amplitude;
+
+      if (checkPaperCollision(paper)) {
+        if (paper.color === "green") {
+          papersCaught += 1;
+          document.getElementById("text").innerText =
+            `Green paper caught! ${papersCaught}/3.`;
+          if (papersCaught >= 6) {
+            stopMinigame("Ti sei convinta di aver capito gli articoli che hai studiato");
+            break;
+          }
+        } else {
+          stopMinigame("L'articolo che hai letto per tutto il giorno era inutile...");
+          break;
+        }
+        papers.splice(i, 1);
+        continue;
+      }
+
+      if (paper.y > box.y + box.h + paper.height) {
+        papers.splice(i, 1);
+      }
+    }
+  } else if (minigameType === "scrivi") {
+    letterSpawnCooldown -= 1;
+    if (letterSpawnCooldown <= 0) {
+      spawnLetter();
+      letterSpawnCooldown = 30 + Math.round(Math.random() * 20);
+    }
+
+    for (let i = letters.length - 1; i >= 0; i -= 1) {
+      const letter = letters[i];
+      letter.ttl -= 1;
+      if (letter.ttl <= 0) {
+        letters.splice(i, 1);
+        continue;
+      }
+
+      if (checkLetterCollision(letter)) {
+        lettersCaught += 1;
+        document.getElementById("text").innerText =
+          `Lettere catturate: ${lettersCaught}/20.`;
+        letters.splice(i, 1);
+        if (lettersCaught >= 20) {
+          stopMinigame("Hai scritto la tesi! 20 lettere catturate.");
+          break;
+        }
+      }
+    }
+  }
+}
+
+function checkPaperCollision(paper) {
+  const playerLeft = player.x - player.size / 2;
+  const playerRight = player.x + player.size / 2;
+  const playerTop = player.y - player.size / 2;
+  const playerBottom = player.y + player.size / 2;
+
+  const paperLeft = paper.x - paper.width / 2;
+  const paperRight = paper.x + paper.width / 2;
+  const paperTop = paper.y;
+  const paperBottom = paper.y + paper.height;
+
+  return !(
+    playerRight < paperLeft ||
+    playerLeft > paperRight ||
+    playerBottom < paperTop ||
+    playerTop > paperBottom
+  );
+}
+
+function spawnLetter() {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const char = alphabet[Math.floor(Math.random() * alphabet.length)];
+  const size = 30;
+  const x = box.x + 10 + Math.random() * (box.w - size - 20);
+  const y = box.y + 10 + Math.random() * (box.h - size - 20);
+  letters.push({ x, y, char, size, ttl: 80 + Math.round(Math.random() * 40) });
+}
+
+function checkLetterCollision(letter) {
+  const playerLeft = player.x - player.size / 2;
+  const playerRight = player.x + player.size / 2;
+  const playerTop = player.y - player.size / 2;
+  const playerBottom = player.y + player.size / 2;
+
+  const letterLeft = letter.x;
+  const letterRight = letter.x + letter.size;
+  const letterTop = letter.y;
+  const letterBottom = letter.y + letter.size;
+
+  return !(
+    playerRight < letterLeft ||
+    playerLeft > letterRight ||
+    playerBottom < letterTop ||
+    playerTop > letterBottom
+  );
+}
+
+function drawMinigame() {
+  if (!minigameActive) return;
+
+  papers.forEach((paper) => {
+    ctx.fillStyle = paper.color;
+    ctx.fillRect(
+      paper.x - paper.width / 2,
+      paper.y,
+      paper.width,
+      paper.height
+    );
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(
+      paper.x - paper.width / 2,
+      paper.y,
+      paper.width,
+      paper.height
+    );
+  });
+
+  letters.forEach((letter) => {
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.fillRect(letter.x, letter.y, letter.size, letter.size);
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(letter.x, letter.y, letter.size, letter.size);
+    ctx.fillStyle = "black";
+    ctx.font = "bold 20px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(letter.char, letter.x + letter.size / 2, letter.y + letter.size / 2);
+  });
 }
 
 /* =========================
@@ -247,6 +456,8 @@ function update() {
   // clamp inside arena
   player.x = Math.max(box.x, Math.min(box.x + box.w, player.x));
   player.y = Math.max(box.y, Math.min(box.y + box.h, player.y));
+
+  updateMinigame();
 }
 
 /* =========================
@@ -330,6 +541,7 @@ function draw() {
 
   drawArena();
   drawBoss();
+  drawMinigame();
   drawPlayer();
 }
 
