@@ -9,11 +9,18 @@
 
 <body>
   <canvas id="game"></canvas>
+  <div id="box-menu" class="box-menu hidden"></div>
 
   <div id="ui">
-    <div id="text">La Laurea ti blocca il cammino...</div>
+    <div id="text">La Laurea ti osserva...</div>
   </div>
 
+  <div id="menu">
+    <button onclick="openMenu('fight')">⚔ FIGHT</button>
+    <button onclick="openMenu('act')">🗣 ACT</button>
+    <button onclick="openMenu('item')">🎒 ITEM</button>
+    <button onclick="openMenu('mercy')">😭 MERCY</button>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>

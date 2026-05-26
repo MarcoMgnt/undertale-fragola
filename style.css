@@ -2,13 +2,12 @@ body {
   margin: 0;
   background: black;
   overflow: hidden;
+  touch-action: none;
   font-family: monospace;
-  touch-action: none; /* IMPORTANTISSIMO per mobile */
 }
 
 canvas {
   display: block;
-  background: black;
 }
 
 #ui {
@@ -18,4 +17,67 @@ canvas {
   color: white;
   padding: 20px;
   font-size: 18px;
+}
+
+#menu {
+  position: absolute;
+  bottom: 80px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  z-index: 10;
+}
+
+button {
+  background: black;
+  color: white;
+  border: 2px solid white;
+  padding: 10px 20px;
+  font-family: monospace;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:active {
+  background: white;
+  color: black;
+}
+
+#box-menu {
+  position: absolute;
+  border: 2px solid white;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 16px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  font-size: 16px;
+  z-index: 20;
+}
+
+#box-menu.hidden {
+  display: none;
+}
+
+#box-menu .box-menu-header {
+  font-weight: bold;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+#box-menu .menu-option {
+  width: 100%;
+  background: black;
+  color: white;
+  border: 1px solid white;
+  margin-bottom: 8px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+#box-menu .menu-option:hover {
+  background: white;
+  color: black;
 }
