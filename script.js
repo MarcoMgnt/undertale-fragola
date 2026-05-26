@@ -94,14 +94,14 @@ function renderStatusBar() {
 
   if (motEl) {
     const level = levelFromValue(statusMotivation);
-    motEl.innerText = capitalize(level);
+    motEl.innerText = level === "medium" ? "Med" : capitalize(level);
     motEl.classList.remove("status-low", "status-medium", "status-high");
     motEl.classList.add(`status-${level}`);
   }
 
   if (anxEl) {
     const level = levelFromValue(statusAnxiety);
-    anxEl.innerText = capitalize(level);
+    anxEl.innerText = level === "medium" ? "Med" : capitalize(level);
     anxEl.classList.remove("status-low", "status-medium", "status-high");
     anxEl.classList.add(`status-${level}`);
   }

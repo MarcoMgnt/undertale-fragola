@@ -109,10 +109,10 @@ button:active {
   left: 50%;
   transform: translateX(-50%);
   bottom: 108px;
-  width: min(90vw, 380px);
+  width: min(86vw, 320px);
   justify-content: center;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   z-index: 15;
   pointer-events: none;
@@ -123,20 +123,20 @@ button:active {
   flex-direction: row;
   align-items: center;
   color: white;
-  font-size: 14px;
-  gap: 8px;
+  font-size: 13px;
+  gap: 4px;
 }
 
 #status-bar .status-label {
   opacity: 0.9;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 #status-bar .status-value {
   background: rgba(255,255,255,0.06);
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 6px;
-  min-width: 60px;
+  min-width: 38px;
   text-align: center;
   pointer-events: auto;
 }
@@ -153,8 +153,8 @@ button:active {
 
   #status-bar {
     bottom: 88px;
-    width: min(90vw, 320px);
-    gap: 8px;
+    width: min(88vw, 300px);
+    gap: 6px;
   }
 
   #status-bar .status-item {
