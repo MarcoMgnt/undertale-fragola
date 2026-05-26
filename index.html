@@ -9,17 +9,33 @@
 
 <body>
   <canvas id="game"></canvas>
+  <div id="player-sprite"></div>
   <div id="box-menu" class="box-menu hidden"></div>
 
   <div id="ui">
     <div id="text">Hai sfidato la laurea...</div>
   </div>
 
+  <div id="status-bar">
+    <div class="status-item">
+      <div class="status-label">HP:</div>
+      <div id="status-hp" class="status-value">10</div>
+    </div>
+    <div class="status-item">
+      <div class="status-label">Motivation:</div>
+      <div id="status-motivation" class="status-value status-medium">Medium</div>
+    </div>
+    <div class="status-item">
+      <div class="status-label">Anxiety:</div>
+      <div id="status-anxiety" class="status-value status-low">Low</div>
+    </div>
+  </div>
+
   <div id="menu">
-    <button onclick="openMenu('fight')">⚔ FIGHT</button>
-    <button onclick="openMenu('act')">🗣 ACT</button>
-    <button onclick="openMenu('item')">🎒 ITEM</button>
-    <button onclick="openMenu('mercy')">😭 MERCY</button>
+    <button id="fight-button" onclick="openMenu('fight')">⚔ FIGHT</button>
+    <button id="act-button" onclick="openMenu('act')">🗣 ACT</button>
+    <button id="item-button" onclick="openMenu('item')">🎒 ITEM</button>
+    <button id="mercy-button" onclick="openMenu('mercy')">😭 MERCY</button>
   </div>
   <script src="script.js"></script>
 </body>

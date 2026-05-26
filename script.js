@@ -16,9 +16,9 @@ function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  box.x = canvas.width * 0.3;
+  box.x = canvas.width * 0.125;
   box.y = canvas.height * 0.4;
-  box.w = canvas.width * 0.4;
+  box.w = canvas.width * 0.75;
   box.h = canvas.height * 0.35;
 
   boss.x = canvas.width / 2;
@@ -33,8 +33,8 @@ window.addEventListener("resize", resize);
    PLAYER (strawberry)
 ========================= */
 
-const baseSpeed = 5;
-const coffeeSpeedBoost = 2;
+const baseSpeed = 4;
+const coffeeSpeedBoost = 1;
 const coffeeShakePerCup = 2;
 let coffeeDrank = 0;
 
@@ -54,39 +54,100 @@ const strawberryImg = new Image();
 strawberryImg.src = "assets/strawberry.png";
 
 const boxMenu = document.getElementById("box-menu");
-const menuOptions = {
-  fight: ["Attack", "Stare", "Charge", "Wait"],
-  act: ["Compliment", "Tease", "Check", "Hug"],
-  item: ["Coffee", "Placeholder 2", "Placeholder 3", "Placeholder 4"],
-  mercy: ["Spare", "Plead", "Surrender", "Escape"]
+const menuButtons = {
+  fight: document.getElementById("fight-button"),
+  act: document.getElementById("act-button"),
+  item: document.getElementById("item-button"),
+  mercy: document.getElementById("mercy-button")
 };
+const menuOptions = {
+  fight: ["✲ Attack", "✲ Stare", "✲ Charge", "✲ Wait"],
+  act: ["✲ Compliment", "✲ Tease", "✲ Check", "✲ Hug"],
+  item: ["✲ Coffee", "✲ Placeholder 2", "✲ Placeholder 3", "✲ Placeholder 4"],
+  mercy: ["✲ Spare", "✲ Plead", "✲ Surrender", "✲ Escape"]
+};
+
 let activeMenu = null;
+let selectedOption = null;
+
+// Status state
+let statusHP = 10; // 1..10
+let statusMotivation = 6; // 1..10
+let statusAnxiety = 2; // 1..10
+
+function levelFromValue(v) {
+  const n = Math.max(1, Math.min(10, Math.round(v)));
+  if (n <= 3) return "low";
+  if (n <= 7) return "medium";
+  return "high";
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function renderStatusBar() {
+  const hpEl = document.getElementById("status-hp");
+  const motEl = document.getElementById("status-motivation");
+  const anxEl = document.getElementById("status-anxiety");
+  if (hpEl) hpEl.innerText = Math.max(1, Math.min(10, Math.round(statusHP)));
+
+  if (motEl) {
+    const level = levelFromValue(statusMotivation);
+    motEl.innerText = capitalize(level);
+    motEl.classList.remove("status-low", "status-medium", "status-high");
+    motEl.classList.add(`status-${level}`);
+  }
+
+  if (anxEl) {
+    const level = levelFromValue(statusAnxiety);
+    anxEl.innerText = capitalize(level);
+    anxEl.classList.remove("status-low", "status-medium", "status-high");
+    anxEl.classList.add(`status-${level}`);
+  }
+}
+
+const playerSprite = document.getElementById("player-sprite");
+function updatePlayerSprite() {
+  if (!playerSprite) return;
+  playerSprite.style.left = `${player.x}px`;
+  playerSprite.style.top = `${player.y}px`;
+  playerSprite.style.width = `${player.size}px`;
+  playerSprite.style.height = `${player.size}px`;
+}
+
+function setActiveMenuButton(type) {
+  Object.keys(menuButtons).forEach((key) => {
+    const button = menuButtons[key];
+    if (!button) return;
+    button.classList.toggle("selected", key === type);
+  });
+}
 
 function updateBoxMenuPosition() {
   if (!boxMenu) return;
   const padding = 20;
-  boxMenu.style.left = `${box.x + padding}px`;
-  boxMenu.style.top = `${box.y + padding}px`;
-  boxMenu.style.width = `${box.w - padding * 2}px`;
-  boxMenu.style.maxHeight = `${box.h - padding * 2}px`;
+  boxMenu.style.left = `${box.x}px`;
+  boxMenu.style.top = `${box.y}px`;
+  boxMenu.style.width = `${box.w}px`;
+  boxMenu.style.height = `${box.h}px`;
+  boxMenu.style.padding = `${padding}px`;
 }
 
 function renderMenuOptions() {
   if (!activeMenu || !boxMenu) return;
   const options = menuOptions[activeMenu] || [];
-  boxMenu.innerHTML = `
-    <div class="box-menu-header">${activeMenu.toUpperCase()}</div>
-    ${options
-      .map(
-        (option) =>
-          `<button class="menu-option" onclick="selectMenuOption('${activeMenu}','${option}')">${option}</button>`
-      )
-      .join("")}
-  `;
+  boxMenu.innerHTML = `${options
+    .map(
+      (option) =>
+        `<button class="menu-option${selectedOption === option ? " selected" : ""}" onclick="selectMenuOption('${activeMenu}','${option}')">${option}</button>`
+    )
+    .join("")}`;
 }
 
 function openMenu(type) {
   activeMenu = type;
+  setActiveMenuButton(type);
   updateBoxMenuPosition();
   renderMenuOptions();
   boxMenu.classList.remove("hidden");
@@ -97,10 +158,13 @@ function openMenu(type) {
 function closeMenu() {
   activeMenu = null;
   boxMenu.classList.add("hidden");
+  setActiveMenuButton(null);
 }
 
 function selectMenuOption(type, option) {
-  if (type === "item" && option === "Coffee") {
+  selectedOption = option;
+  renderMenuOptions();
+  if (type === "item" && option === "✲ Coffee") {
     drinkCoffee();
   } else {
     document.getElementById("text").innerText = `Selected ${option}.`;
@@ -195,7 +259,7 @@ function drawArena() {
 
 function drawPlayer() {
   let drawX = player.x - player.size / 2;
-  let drawY = player.y - player.size / 2;
+  let drawY = player.y - player.size / 3;
 
   if (coffeeDrank > 0) {
     const maxShake = coffeeDrank * coffeeShakePerCup;
@@ -270,6 +334,8 @@ function draw() {
 function loop() {
   update();
   draw();
+  updatePlayerSprite();
+  renderStatusBar();
   requestAnimationFrame(loop);
 }
 
