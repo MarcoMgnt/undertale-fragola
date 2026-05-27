@@ -89,6 +89,10 @@ const menuOptions = {
   mercy: ["✲ Abbandona", "✲ Accettazione", "✲ Consegna tesi"]
 };
 
+// word bank used by the writing minigame
+const words = ["impact", "fertilization", "regimes", "vegetative", "growth", "yield", "organoleptic", "nutritional", "quality", "vaccinium", "corymbosum", "duke", "federica", "mecozzi", "alessandro", "gasparrini", "luca", "mazzoni", "bruno", "mezzetti", "davide", "raffaelli", "micol", "marcellini", "francesca", "balducci", "valeria", "pergolotti", "rohullah", "qaderi", "gianni", "malavolta", "franco", "capocasa", "academiceditor", "antonios", "koutelidakis", "received", "revised", "accepted", "published", "copyright", "authors", "licensee", "switzerland", "article", "open", "access", "distributed", "terms", "conditions", "creative", "commons", "attribution", "department", "agricultural", "food", "environmental", "sciences", "polytechnic", "university", "marche", "ancona", "berries", "corso", "mazzini", "cesena", "salvi", "vivai", "strada", "provinciale", "boschetto", "lagosanto", "azienda", "agricola", "contrada", "lapedona", "correspondence", "small", "fruits", "increasingly", "popular", "consumers", "producers", "blueberries", "standing", "flavour", "benefits", "specific", "growing", "requirements", "cultivation", "challenging", "areas", "alkaline", "soils", "plant", "limited", "soilless", "provides", "practical", "profitable", "solution", "issues", "higher", "initial", "costs", "study", "examined", "grown", "conditions", "region", "using", "different", "concentrations", "nutrient", "solutions", "measured", "electrical", "conductivity", "fertigation", "treatments", "compared", "irrigation", "water", "results", "showed", "produced", "highest", "numbers", "wood", "flower", "shoots", "greatest", "although", "levels", "significantly", "affect", "parameters", "plants", "lower", "intake", "displayed", "anthocyanin", "content", "antioxidant", "capacity", "contrast", "greater", "supply", "polyphenol", "overall", "findings", "highlight", "potential", "optimize", "production", "suboptimal", "recommended", "dietary", "guidelines", "worldwide", "several", "studies", "shown", "rich", "health", "protective", "against", "various", "diseases", "therefore", "considered", "functional", "foods", "among", "essential", "mention", "most", "cover", "large", "part", "market", "strawberry", "fragaria", "ananassa", "raspberry", "rubus", "idaeus", "blueberry", "blackberry", "black", "cranberry", "oxycoccus", "many", "others", "consumed", "either", "fresh", "processed", "form", "unique", "shape", "colour", "chemical", "composition", "boast", "remarkable", "wide", "range", "phytochemicals", "phenolic", "compounds", "activate", "biochemical", "mechanisms", "counteract", "development", "progression", "chronic", "within", "broad", "group", "gained", "particular", "attention", "due", "rapid", "expansion", "cultivated", "value", "documented", "promoting", "properties", "between", "trade", "experienced", "significant", "global", "driven", "demand", "healthier", "conscious", "trend", "remained", "consistent", "subsequent", "years", "european", "situation", "increase", "widespread", "species", "highbush", "belongs", "ericaceae", "family", "main", "groups", "recognized", "northern", "mainly", "originating", "cooler", "north", "america", "southern", "transition", "traditional", "cultivars", "transformative", "developments", "industry", "varieties", "long", "dominant", "climates", "require", "chilling", "hours", "produce", "fruit", "winter", "allowing", "growers", "establish", "plantations", "warmer", "including", "peru", "mexico", "morocco", "parts", "africa", "asia", "turned", "truly", "crop", "enabling", "seasonal", "year", "round", "major", "markets", "like", "europe", "peculiar", "soil", "factor", "spread", "adapted", "fact", "require", "tend", "acidic", "organic", "matter", "drainage", "ensure", "performance", "according", "conducted", "china", "values", "exceeding", "support", "ideal", "combined", "agronomic", "thrive", "climatic", "cold", "guaranteeing", "dormancy", "success", "however", "haze", "damage", "especially", "during", "flowering", "sudden", "temperature", "drop", "occurs", "characteristics", "key", "understanding", "origin", "adaptation", "began", "early", "century", "canada", "united", "states", "southeastern", "arkansas", "florida", "georgia", "carolina", "maine", "michigan", "jersey", "washington", "geographic", "distribution", "characterized", "markedly", "pedoclimatic", "extension", "harvesting", "period", "commercial", "supported", "presence", "naturally", "suited", "optimal", "ranging", "typically", "sandy", "loam", "texture", "where", "present", "practices", "commonly", "adopted", "heavy", "mulching", "improve", "structure", "application", "elemental", "sulphur", "reduce", "pacific", "northwest", "demonstrates", "climate", "formation", "determines", "suitability", "environments", "precipitation", "west", "cascade", "promotes", "east", "result", "less", "frequently", "artificially", "acidified", "amended", "taking", "account", "hemisphere", "south", "introduced", "chile", "argentina", "complementary", "windows", "country", "zones", "types", "accumulation", "generally", "increasing", "humid", "low", "improved", "through", "incorporation", "sugarcane", "residues", "additional", "takes", "place", "entrerios", "buenos", "aires", "favourable", "provide", "risks", "associated", "frost", "hail", "events", "spring", "international", "organization", "report", "emerging", "zones", "notably", "compensated", "reduced", "output", "demonstrating", "resilience", "adaptability", "diversification", "sourcing", "mitigates", "stable", "prices"];
+
+
 let activeMenu = null;
 let selectedOption = null;
 
@@ -116,6 +120,8 @@ let letters = [];
 let lettersCaught = 0;
 let minigameSpawnCooldown = 0;
 let letterSpawnCooldown = 0;
+// last row used when spawning words (avoid consecutive spawns on same row)
+let lastSpawnedWordRow = -1;
 let ricercaWins = 0;
 let wordsWritten = 0;
 // Fragole minigame state
@@ -363,9 +369,9 @@ function mangiaFragole() {
     return;
   }
   fragoleWins -= 1;
-  setHP(Math.min(10, statusHP + 2));
-  setMotivation(Math.min(10, statusMotivation + 1));
-  setAnxiety(Math.max(1, statusAnxiety - 1));
+  setHP(Math.min(10, statusHP + 3));
+  setMotivation(Math.min(10, statusMotivation + 3));
+  setAnxiety(Math.max(1, statusAnxiety - 3));
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
     `✲ Mangi le fragole che avresti dovuto analizzare...`;
@@ -665,7 +671,12 @@ function updateMinigame(deltaTime) {
     letterSpawnCooldown -= deltaTime;
     if (letterSpawnCooldown <= 0) {
       spawnWord();
-      letterSpawnCooldown = 0.075;
+      // scale spawn rate with motivation: lower motivation -> slower spawning
+      const baseLetterCooldown = 0.1; // seconds
+      let motivationFactor = 1 + (statusMotivation - 5) / 10; // ~0.5..1.5
+      motivationFactor = Math.max(0.5, Math.min(1.5, motivationFactor));
+      // higher motivation -> smaller cooldown (faster spawns)
+      letterSpawnCooldown = baseLetterCooldown / motivationFactor + Math.random() * 0.05;
     }
 
     for (let i = letters.length - 1; i >= 0; i -= 1) {
@@ -683,7 +694,9 @@ function updateMinigame(deltaTime) {
               stopMinigame(
                 `✲ Non hai niente su cui scrivere...`
               );
-            } else {  
+            } else {
+              // trigger boss red-shake feedback for successful writing
+              bossShakeTimer = BOSS_SHAKE_DURATION;
               stopMinigame(
               `✲ Oggi hai scritto ${addedWords.toLocaleString()} parole! Totale: ${wordsWritten.toLocaleString()}.`
             );
@@ -695,7 +708,7 @@ function updateMinigame(deltaTime) {
           setMotivation(Math.max(1, statusMotivation - 1));
           setAnxiety(Math.min(10, statusAnxiety + 1));
           boxShakeTimer = BOX_SHAKE_DURATION;
-          showText("✲ Hai scritto una frase sbagliata!", 1000);
+          showText("✲ Hai scritto una frase senza senso...", 1000);
           letters.splice(i, 1);
         }
         continue;
@@ -739,15 +752,28 @@ function checkPaperCollision(paper) {
 }
 
 function spawnWord() {
-  const words = ["impact", "fertilization", "regimes", "vegetative", "growth", "yield", "organoleptic", "nutritional", "quality", "vaccinium", "corymbosum", "duke", "federica", "mecozzi", "alessandro", "gasparrini", "luca", "mazzoni", "bruno", "mezzetti", "davide", "raffaelli", "micol", "marcellini", "francesca", "balducci", "valeria", "pergolotti", "rohullah", "qaderi", "gianni", "malavolta", "franco", "capocasa", "academiceditor", "antonios", "koutelidakis", "received", "revised", "accepted", "published", "copyright", "authors", "licensee", "switzerland", "article", "open", "access", "distributed", "terms", "conditions", "creative", "commons", "attribution", "department", "agricultural", "food", "environmental", "sciences", "polytechnic", "university", "marche", "ancona", "berries", "corso", "mazzini", "cesena", "salvi", "vivai", "strada", "provinciale", "boschetto", "lagosanto", "azienda", "agricola", "contrada", "lapedona", "correspondence", "small", "fruits", "increasingly", "popular", "consumers", "producers", "blueberries", "standing", "flavour", "benefits", "specific", "growing", "requirements", "cultivation", "challenging", "areas", "alkaline", "soils", "plant", "limited", "soilless", "provides", "practical", "profitable", "solution", "issues", "higher", "initial", "costs", "study", "examined", "grown", "conditions", "region", "using", "different", "concentrations", "nutrient", "solutions", "measured", "electrical", "conductivity", "fertigation", "treatments", "compared", "irrigation", "water", "results", "showed", "produced", "highest", "numbers", "wood", "flower", "shoots", "greatest", "although", "levels", "significantly", "affect", "parameters", "plants", "lower", "intake", "displayed", "anthocyanin", "content", "antioxidant", "capacity", "contrast", "greater", "supply", "polyphenol", "overall", "findings", "highlight", "potential", "optimize", "production", "suboptimal", "recommended", "dietary", "guidelines", "worldwide", "several", "studies", "shown", "rich", "health", "protective", "against", "various", "diseases", "therefore", "considered", "functional", "foods", "among", "essential", "mention", "most", "cover", "large", "part", "market", "strawberry", "fragaria", "ananassa", "raspberry", "rubus", "idaeus", "blueberry", "blackberry", "black", "cranberry", "oxycoccus", "many", "others", "consumed", "either", "fresh", "processed", "form", "unique", "shape", "colour", "chemical", "composition", "boast", "remarkable", "wide", "range", "phytochemicals", "phenolic", "compounds", "activate", "biochemical", "mechanisms", "counteract", "development", "progression", "chronic", "within", "broad", "group", "gained", "particular", "attention", "due", "rapid", "expansion", "cultivated", "value", "documented", "promoting", "properties", "between", "trade", "experienced", "significant", "global", "driven", "demand", "healthier", "conscious", "trend", "remained", "consistent", "subsequent", "years", "european", "situation", "increase", "widespread", "species", "highbush", "belongs", "ericaceae", "family", "main", "groups", "recognized", "northern", "mainly", "originating", "cooler", "north", "america", "southern", "transition", "traditional", "cultivars", "transformative", "developments", "industry", "varieties", "long", "dominant", "climates", "require", "chilling", "hours", "produce", "fruit", "winter", "allowing", "growers", "establish", "plantations", "warmer", "including", "peru", "mexico", "morocco", "parts", "africa", "asia", "turned", "truly", "crop", "enabling", "seasonal", "year", "round", "major", "markets", "like", "europe", "peculiar", "soil", "factor", "spread", "adapted", "fact", "require", "tend", "acidic", "organic", "matter", "drainage", "ensure", "performance", "according", "conducted", "china", "values", "exceeding", "support", "ideal", "combined", "agronomic", "thrive", "climatic", "cold", "guaranteeing", "dormancy", "success", "however", "haze", "damage", "especially", "during", "flowering", "sudden", "temperature", "drop", "occurs", "characteristics", "key", "understanding", "origin", "adaptation", "began", "early", "century", "canada", "united", "states", "southeastern", "arkansas", "florida", "georgia", "carolina", "maine", "michigan", "jersey", "washington", "geographic", "distribution", "characterized", "markedly", "pedoclimatic", "extension", "harvesting", "period", "commercial", "supported", "presence", "naturally", "suited", "optimal", "ranging", "typically", "sandy", "loam", "texture", "where", "present", "practices", "commonly", "adopted", "heavy", "mulching", "improve", "structure", "application", "elemental", "sulphur", "reduce", "pacific", "northwest", "demonstrates", "climate", "formation", "determines", "suitability", "environments", "precipitation", "west", "cascade", "promotes", "east", "result", "less", "frequently", "artificially", "acidified", "amended", "taking", "account", "hemisphere", "south", "introduced", "chile", "argentina", "complementary", "windows", "country", "zones", "types", "accumulation", "generally", "increasing", "humid", "low", "improved", "through", "incorporation", "sugarcane", "residues", "additional", "takes", "place", "entrerios", "buenos", "aires", "favourable", "provide", "risks", "associated", "frost", "hail", "events", "spring", "international", "organization", "report", "emerging", "zones", "notably", "compensated", "reduced", "output", "demonstrating", "resilience", "adaptability", "diversification", "sourcing", "mitigates", "stable", "prices"];
   const word = words[Math.floor(Math.random() * words.length)];
-  const isWhite = Math.random() < 0.825; // 70% white, 30% red
+  // scale white/red chance with anxiety (higher anxiety -> more red)
+  const anxietyFactor = (statusAnxiety - 1) / 9; // 0..1
+  const whiteProb = Math.max(0.75, Math.min(0.95, 0.85 - anxietyFactor * 0.5));
+  const isWhite = Math.random() < whiteProb;
   const fontSize = 16;
-  const lineHeight = (box.h) / 9; // 5 rows
-  const row = Math.floor(Math.random() * 9);
-  const y = box.y + row * lineHeight;
+  const rows = 5;
+  const lineHeight = (box.h - 20) / rows;
+  // pick a row different from the last spawned row to avoid consecutive overlap
+  let row = Math.floor(Math.random() * rows);
+  if (row === lastSpawnedWordRow) {
+    // try a different row (choose neighboring or random alternative)
+    row = (row + 1 + Math.floor(Math.random() * (rows - 1))) % rows;
+  }
+  const y = box.y + 10 + row * lineHeight + lineHeight / 2;
+  lastSpawnedWordRow = row;
   
   const textWidth = word.length * fontSize * 0.6; // rough estimate
+  // scale speed with motivation (higher motivation -> faster words)
+  const motivationFactor = 1 + (statusMotivation - 5) / 10; // ~0.6..1.5
+  const baseSpeed = 200;
+  const speed = Math.max(100, baseSpeed * motivationFactor);
   
   letters.push({
     text: word,
@@ -755,7 +781,7 @@ function spawnWord() {
     y: y,
     width: textWidth,
     height: fontSize,
-    speed: 300,
+    speed: speed,
     color: isWhite ? "white" : "red",
     size: fontSize
   });
@@ -822,6 +848,10 @@ const boss = {
 
 const bossImg = new Image();
 bossImg.src = "assets/boss.png";
+// boss shake/tint state when player writes words
+let bossShakeTimer = 0;
+const BOSS_SHAKE_DURATION = 1.5;
+const BOSS_SHAKE_INTENSITY = 30;
 
 /* =========================
    INPUT (keyboard)
@@ -903,6 +933,10 @@ function update(deltaTime) {
       coffeeShakeDecayTimer += COFFEE_SHAKE_DECAY_INTERVAL;
     }
   }
+
+  if (bossShakeTimer > 0) {
+    bossShakeTimer = Math.max(0, bossShakeTimer - deltaTime);
+  }
 }
 
 /* =========================
@@ -954,8 +988,13 @@ function drawBoss() {
   const bobOffset = Math.sin(animationTime) * bossBobbingHeight;
   const rotation = Math.sin(animationTime * 0.5) * bossRotationAmount;
   
-  const bossScreenX = boss.x;
-  const bossScreenY = boss.y + bobOffset;
+  // apply additional shake when bossShakeTimer is active
+  const shakeFactor = bossShakeTimer > 0 ? bossShakeTimer / BOSS_SHAKE_DURATION : 0;
+  const extraOffsetX = bossShakeTimer > 0 ? (Math.random() - 0.5) * BOSS_SHAKE_INTENSITY * shakeFactor : 0;
+  const extraOffsetY = bossShakeTimer > 0 ? (Math.random() - 0.5) * BOSS_SHAKE_INTENSITY * shakeFactor : 0;
+
+  const bossScreenX = boss.x + extraOffsetX;
+  const bossScreenY = boss.y + bobOffset + extraOffsetY;
 
   ctx.save();
   ctx.translate(bossScreenX, bossScreenY);
@@ -963,16 +1002,38 @@ function drawBoss() {
   ctx.translate(-bossScreenX, -bossScreenY);
 
   if (bossImg.complete) {
-    ctx.drawImage(
-      bossImg,
-      bossScreenX - boss.size / 2,
-      bossScreenY - boss.size / 3,
-      boss.size,
-      boss.size
-    );
+    if (bossShakeTimer > 0) {
+      const offscreen = document.createElement("canvas");
+      offscreen.width = boss.size;
+      offscreen.height = boss.size;
+      const offCtx = offscreen.getContext("2d");
+      offCtx.drawImage(bossImg, 0, 0, boss.size, boss.size);
+      offCtx.globalCompositeOperation = "source-in";
+      offCtx.fillStyle = "rgba(255,0,0,0.36)";
+      offCtx.fillRect(0, 0, boss.size, boss.size);
+      ctx.drawImage(
+        offscreen,
+        bossScreenX - boss.size / 2,
+        bossScreenY - boss.size / 3,
+        boss.size,
+        boss.size
+      );
+    } else {
+      ctx.drawImage(
+        bossImg,
+        bossScreenX - boss.size / 2,
+        bossScreenY - boss.size / 3,
+        boss.size,
+        boss.size
+      );
+    }
   } else {
     ctx.fillStyle = "white";
     ctx.fillRect(bossScreenX - 40, bossScreenY - 40, 80, 80);
+    if (bossShakeTimer > 0) {
+      ctx.fillStyle = 'rgba(255,0,0,0.36)';
+      ctx.fillRect(bossScreenX - 40, bossScreenY - 40, 80, 80);
+    }
   }
 
   ctx.restore();
