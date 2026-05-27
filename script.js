@@ -134,6 +134,8 @@ const FRAGOLE_TARGET = 16;
 let targetParole = 500000;
 let tesicorretta = false;
 let boxShakeTimer = 0;
+let boxShakeSuccessTimer = 0;
+const BOX_SHAKE_SUCCESS_DURATION = 4.0;
 const BOX_SHAKE_DURATION = 1.0;
 const BOX_SHAKE_INTENSITY = 20;
 const STATUS_SHAKE_INTENSITY = 6;
@@ -578,12 +580,13 @@ function submitThesis() {
   if (wordsWritten >= targetParole && tesicorretta === true) {
   //if (true === true) {
     lockUI();
+    boxShakeSuccessTimer = BOX_SHAKE_SUCCESS_DURATION;
     document.getElementById("text").innerText =
-      `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. 🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉 Ti puoi laureare!!`;
+      `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. 🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉 Ti puoi laureare!!! Ora apri la busta...`;
       // hyperlink to a link
     setTimeout(() => {
       window.open("https://youtu.be/TqdPXSAUoyA?si=TWYHCJ4gOYwFn_-B", "_blank");
-    }, 3000);
+    }, 4000);
     } else {
     setMotivation(Math.max(1, statusMotivation - 1));
     setAnxiety(Math.min(10, statusAnxiety + 1));
@@ -925,6 +928,9 @@ function update(deltaTime) {
   if (boxShakeTimer > 0) {
     boxShakeTimer = Math.max(0, boxShakeTimer - deltaTime);
   }
+  if (boxShakeSuccessTimer > 0) {
+    boxShakeSuccessTimer = Math.max(0, boxShakeSuccessTimer - deltaTime);
+  }
   // Decrement individual status shake timers
   if (hpShakeTimerPositive > 0) {
     hpShakeTimerPositive = Math.max(0, hpShakeTimerPositive - deltaTime);
@@ -962,10 +968,26 @@ function update(deltaTime) {
 ========================= */
 
 function drawArena() {
-  const shakeFactor = boxShakeTimer > 0 ? boxShakeTimer / BOX_SHAKE_DURATION : 0;
-  const offsetX = boxShakeTimer > 0 ? (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor : 0;
-  const offsetY = boxShakeTimer > 0 ? (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor : 0;
-  ctx.strokeStyle = boxShakeTimer > 0 ? "red" : "white";
+  const isSuccess = boxShakeSuccessTimer > 0;
+  const isDamage = boxShakeTimer > 0;
+
+  let offsetX = 0;
+  let offsetY = 0;
+  let strokeColor = "white";
+
+  if (isSuccess) {
+    const shakeFactor = boxShakeSuccessTimer / BOX_SHAKE_SUCCESS_DURATION;
+    offsetX = (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor;
+    offsetY = (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor;
+    strokeColor = "#7CFC00";
+  } else if (isDamage) {
+    const shakeFactor = boxShakeTimer / BOX_SHAKE_DURATION;
+    offsetX = (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor;
+    offsetY = (Math.random() - 0.5) * BOX_SHAKE_INTENSITY * shakeFactor;
+    strokeColor = "red";
+  }
+
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth = 4;
   ctx.strokeRect(box.x + offsetX, box.y + offsetY, box.w, box.h);
 }
