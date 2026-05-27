@@ -58,6 +58,24 @@ strawberryImg.src = "assets/strawberry.png";
 
 const boxMenu = document.getElementById("box-menu");
 const ui = document.getElementById("ui");
+let textClearTimeout = null;
+
+function showText(message, duration = 0) {
+  const textEl = document.getElementById("text");
+  if (!textEl) return;
+  textEl.innerText = message;
+  if (textClearTimeout) {
+    clearTimeout(textClearTimeout);
+    textClearTimeout = null;
+  }
+  if (duration > 0) {
+    textClearTimeout = setTimeout(() => {
+      textEl.innerText = "";
+      textClearTimeout = null;
+    }, duration);
+  }
+}
+
 const menuButtons = {
   fight: document.getElementById("fight-button"),
   act: document.getElementById("act-button"),
@@ -65,7 +83,7 @@ const menuButtons = {
   mercy: document.getElementById("mercy-button")
 };
 const menuOptions = {
-  fight: ["✲ Raccogli le fragole", "✲ Rircerca", "✲ Scrivi la tesi"],
+  fight: ["✲ Raccogli le fragole", "✲ Studia", "✲ Scrivi la tesi"],
   act: ["✲ Discuti la tesi con il prof"],
   item: ["✲ Caffè", "✲ Fragole"],
   mercy: ["✲ Abbandona", "✲ Accettazione", "✲ Consegna tesi"]
@@ -78,6 +96,16 @@ let selectedOption = null;
 let statusHP = 10; // 1..10
 let statusMotivation = 6; // 1..10
 let statusAnxiety = 2; // 1..10
+
+// Status shake timers for positive and negative changes
+let hpShakeTimerPositive = 0;
+let hpShakeTimerNegative = 0;
+let motivationShakeTimerPositive = 0;
+let motivationShakeTimerNegative = 0;
+let anxietyShakeTimerPositive = 0;
+let anxietyShakeTimerNegative = 0;
+const STATUS_ELEMENT_SHAKE_DURATION = 1.0;
+const STATUS_ELEMENT_SHAKE_INTENSITY = 20;
 
 // Minigame state
 let minigameActive = false;
@@ -115,17 +143,91 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+// Status setter functions that trigger shake on change
+function setHP(newValue) {
+  const oldValue = statusHP;
+  statusHP = newValue;
+  if (newValue > oldValue) {
+    hpShakeTimerPositive = STATUS_ELEMENT_SHAKE_DURATION;
+  } else if (newValue < oldValue) {
+    hpShakeTimerNegative = STATUS_ELEMENT_SHAKE_DURATION;
+  }
+}
+
+function setMotivation(newValue) {
+  const oldValue = statusMotivation;
+  statusMotivation = newValue;
+  if (newValue > oldValue) {
+    motivationShakeTimerPositive = STATUS_ELEMENT_SHAKE_DURATION;
+  } else if (newValue < oldValue) {
+    motivationShakeTimerNegative = STATUS_ELEMENT_SHAKE_DURATION;
+  }
+}
+
+function setAnxiety(newValue) {
+  const oldValue = statusAnxiety;
+  statusAnxiety = newValue;
+  // For anxiety: positive change is when it DECREASES (good for player)
+  if (newValue < oldValue) {
+    anxietyShakeTimerPositive = STATUS_ELEMENT_SHAKE_DURATION;
+  } else if (newValue > oldValue) {
+    anxietyShakeTimerNegative = STATUS_ELEMENT_SHAKE_DURATION;
+  }
+}
+
 function renderStatusBar() {
   const hpEl = document.getElementById("status-hp");
+  const hpLabel = hpEl ? hpEl.previousElementSibling : null;
   const motEl = document.getElementById("status-motivation");
+  const motLabel = motEl ? motEl.previousElementSibling : null;
   const anxEl = document.getElementById("status-anxiety");
-  if (hpEl) hpEl.innerText = Math.max(1, Math.min(10, Math.round(statusHP)));
+  const anxLabel = anxEl ? anxEl.previousElementSibling : null;
+
+  // Helper function to apply shake and color
+  function applyShakeEffect(element, label, positiveTimer, negativeTimer) {
+    if (!element) return;
+    
+    let shakeFactor = 0;
+    let shakeColor = "";
+    
+    if (positiveTimer > 0) {
+      shakeFactor = positiveTimer / STATUS_ELEMENT_SHAKE_DURATION;
+      shakeColor = "#7CFC00"; // Green
+    } else if (negativeTimer > 0) {
+      shakeFactor = negativeTimer / STATUS_ELEMENT_SHAKE_DURATION;
+      shakeColor = "red";
+    }
+    
+    if (shakeFactor > 0) {
+      const offsetX = (Math.random() - 0.5) * STATUS_ELEMENT_SHAKE_INTENSITY * shakeFactor;
+      const offsetY = (Math.random() - 0.5) * STATUS_ELEMENT_SHAKE_INTENSITY * shakeFactor;
+      element.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+      element.style.color = shakeColor;
+      if (label) {
+        label.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+        label.style.color = shakeColor;
+      }
+    } else {
+      element.style.transform = "";
+      element.style.color = "";
+      if (label) {
+        label.style.transform = "";
+        label.style.color = "";
+      }
+    }
+  }
+
+  if (hpEl) {
+    hpEl.innerText = Math.max(1, Math.min(10, Math.round(statusHP)));
+    applyShakeEffect(hpEl, hpLabel, hpShakeTimerPositive, hpShakeTimerNegative);
+  }
 
   if (motEl) {
     const level = levelFromValue(statusMotivation);
     motEl.innerText = level === "medium" ? "Med" : capitalize(level);
     motEl.classList.remove("status-low", "status-medium", "status-high");
     motEl.classList.add(`status-${level}`);
+    applyShakeEffect(motEl, motLabel, motivationShakeTimerPositive, motivationShakeTimerNegative);
   }
 
   if (anxEl) {
@@ -133,6 +235,7 @@ function renderStatusBar() {
     anxEl.innerText = level === "medium" ? "Med" : capitalize(level);
     anxEl.classList.remove("status-low", "status-medium", "status-high");
     anxEl.classList.add(`status-${level}`);
+    applyShakeEffect(anxEl, anxLabel, anxietyShakeTimerPositive, anxietyShakeTimerNegative);
   }
 
   const wordsEl = document.getElementById("status-words");
@@ -145,19 +248,8 @@ function renderStatusBar() {
       const offsetX = (Math.random() - 0.5) * STATUS_SHAKE_INTENSITY * shakeFactor;
       const offsetY = (Math.random() - 0.5) * STATUS_SHAKE_INTENSITY * shakeFactor;
       statusBar.style.transform = `translate(-50%, ${offsetY}px) translateX(${offsetX}px)`;
-      statusBar.style.border = "1px solid red";
-      statusBar.style.boxShadow = "0 0 14px rgba(255, 0, 0, 0.7)";
-      statusBar.style.borderRadius = "10px";
-      statusBar.querySelectorAll(".status-value").forEach((el) => {
-        el.style.backgroundColor = "rgba(255, 0, 0, 0.12)";
-      });
     } else {
       statusBar.style.transform = "translateX(-50%)";
-      statusBar.style.border = "none";
-      statusBar.style.boxShadow = "none";
-      statusBar.querySelectorAll(".status-value").forEach((el) => {
-        el.style.backgroundColor = "";
-      });
     }
   }
 }
@@ -229,7 +321,7 @@ function selectMenuOption(type, option) {
   renderMenuOptions();
   if (type === "fight" && option === "✲ Raccogli le fragole") {
     startFragoleMinigame();
-  } else if (type === "fight" && option === "✲ Rircerca") {
+  } else if (type === "fight" && option === "✲ Studia") {
     startRicercaMinigame();
   } else if (type === "fight" && option === "✲ Scrivi la tesi") {
     startWritingMinigame();
@@ -255,9 +347,9 @@ function drinkCoffee() {
   coffeeDrank += 1;
   coffeeShakeLevel += 1;
   coffeeShakeDecayTimer = COFFEE_SHAKE_DECAY_INTERVAL;
-  statusHP = Math.min(10, statusHP + 1);
-  statusMotivation = Math.min(10, statusMotivation + 1);
-  statusAnxiety = Math.min(10, statusAnxiety + 1);
+  setHP(Math.min(10, statusHP + 1));
+  setMotivation(Math.min(10, statusMotivation + 1));
+  setAnxiety(Math.min(10, statusAnxiety + 1));
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
     `✲ Bevi il caffè delle macchinette, fa schifo ma ti senti più sveglia`;
@@ -271,9 +363,9 @@ function mangiaFragole() {
     return;
   }
   fragoleWins -= 1;
-  statusHP = Math.min(10, statusHP + 2);
-  statusMotivation = Math.min(10, statusMotivation + 1);
-  statusAnxiety = Math.max(1, statusAnxiety - 1);
+  setHP(Math.min(10, statusHP + 2));
+  setMotivation(Math.min(10, statusMotivation + 1));
+  setAnxiety(Math.max(1, statusAnxiety - 1));
   player.speed = baseSpeed + coffeeDrank * coffeeSpeedBoost;
   document.getElementById("text").innerText =
     `✲ Mangi le fragole che avresti dovuto analizzare...`;
@@ -370,7 +462,7 @@ function updateFragole(deltaTime) {
   }
 
   // check pillar collisions with player
-  for (let i = 0; i < pillars.length; i++) {
+  for (let i = pillars.length - 1; i >= 0; i--) {
     const p = pillars[i];
     const pb = getPlayerCollisionBounds(0.2);
     const pillarLeft = p.x - p.width / 2;
@@ -378,8 +470,15 @@ function updateFragole(deltaTime) {
     const pillarTop = p.y;
     const pillarBottom = box.y + box.h;
     if (!(pb.right < pillarLeft || pb.left > pillarRight || pb.bottom < pillarTop || pb.top > pillarBottom)) {
-      stopMinigame("✲ Hai rotto una pianta!", true);
-      return;
+      setHP(Math.max(1, statusHP - 1));
+      setMotivation(Math.max(1, statusMotivation - 1));
+      setAnxiety(Math.min(10, statusAnxiety + 1));
+      boxShakeTimer = BOX_SHAKE_DURATION;
+      showText("✲ Hai rotto una pianta!", 1000);
+      const collidedPillar = pillars.splice(i, 1)[0];
+      for (let j = strawberries.length - 1; j >= 0; j--) {
+        if (strawberries[j].pillarRef === collidedPillar) strawberries.splice(j, 1);
+      }
     }
   }
 }
@@ -425,19 +524,19 @@ function correzionetesi() {
   if (wordsWritten <= 2000) {
     document.getElementById("text").innerText =
       `✲ Ma non hai ancora scritto niente! Non mi fare perdere tempo...`;
-    statusHP = Math.max(1, statusHP - 1);
+    setHP(Math.max(1, statusHP - 1));
   } else if (wordsWritten <= 10000) {
     wordsWritten = Math.max(0, wordsWritten - Math.round(Math.random() * 500 + 500)); // lose some words due to corrections
     document.getElementById("text").innerText =
       `✲ Non hai ancora scritto abbastanza! Ma intanto rimuovi questa parte... Totale parole: ${wordsWritten.toLocaleString()}`;
-    statusHP = Math.max(1, statusHP - 1);
-    statusMotivation = Math.max(1, statusMotivation - 1);
-    statusAnxiety = Math.min(10, statusAnxiety + 1);
+    setHP(Math.max(1, statusHP - 1));
+    setMotivation(Math.max(1, statusMotivation - 1));
+    setAnxiety(Math.min(10, statusAnxiety + 1));
   } else if (wordsWritten > 10000) {
     tesicorretta = true;
-    statusHP = Math.max(1, statusHP - 1);
-    statusMotivation = Math.max(1, statusMotivation - 1);
-    statusAnxiety = Math.min(10, statusAnxiety + 1);
+    setHP(Math.max(1, statusHP - 1));
+    setMotivation(Math.max(1, statusMotivation - 1));
+    setAnxiety(Math.min(10, statusAnxiety + 1));
     wordsWritten = Math.max(0, wordsWritten - Math.round(Math.random() * 500 + 500)); // lose some words due to corrections
     document.getElementById("text").innerText =
       `✲ Non male ma cambia la struttura... Totale parole: ${wordsWritten.toLocaleString()}`;
@@ -445,20 +544,28 @@ function correzionetesi() {
 }
 
 function abbandona()  {
-  statusHP = Math.max(1, statusHP - 2);
-  statusMotivation = Math.max(1, statusMotivation - 3);
-  statusAnxiety = Math.min(10, statusAnxiety + 3);
+  setHP(Math.max(1, statusHP - 2));
+  setMotivation(Math.max(1, statusMotivation - 3));
+  setAnxiety(Math.min(10, statusAnxiety + 3));
   document.getElementById("text").innerText =
     `✲ Hai deciso di abbandonare... ma ormai non puoi tornare indietro`;
 }
 
 function accettazione() {
+  if (wordsWritten > 10000) {
   targetParole = 10000;
-  statusHP = Math.max(1, statusHP - 1);
-  statusMotivation = Math.max(1, statusMotivation - 2);
-  statusAnxiety = Math.max(1, statusAnxiety - 3);
+  setHP(Math.max(1, statusHP - 1));
+  setMotivation(Math.max(1, statusMotivation - 2));
+  setAnxiety(Math.max(1, statusAnxiety - 3));
   document.getElementById("text").innerText =
-    `✲ Accetti che la tesi non sara mai perfetta, la fine è in vista`;
+    `✲ Accetti che l'unica buona tesi è una tesi finita`;
+  } else {
+  setHP(Math.max(1, statusHP - 1));
+  setMotivation(Math.max(1, statusMotivation - 1));
+  setAnxiety(Math.min(10, statusAnxiety + 1));
+    document.getElementById("text").innerText =
+    `✲ La tua tesi ti fa ancora schifo...`;
+  }
 }
 
 function submitThesis() {
@@ -466,8 +573,8 @@ function submitThesis() {
     document.getElementById("text").innerText =
       `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. Hai vinto!`;
   } else {
-    statusMotivation = Math.max(1, statusMotivation - 1);
-    statusAnxiety = Math.min(10, statusAnxiety + 1);
+    setMotivation(Math.max(1, statusMotivation - 1));
+    setAnxiety(Math.min(10, statusAnxiety + 1));
     document.getElementById("text").innerText =
       `✲ Non sei ancora pronto. Hai solo ${wordsWritten.toLocaleString()} parole`;
   }
@@ -475,14 +582,14 @@ function submitThesis() {
 
 function stopMinigame(message, lost = false) {
   if (minigameType === "ricerca" && lost) {
-    statusHP = Math.max(1, statusHP - 1);
-    statusMotivation = Math.max(1, statusMotivation - 1);
-    statusAnxiety = Math.min(10, statusAnxiety + 1);
+    setHP(Math.max(1, statusHP - 1));
+    setMotivation(Math.max(1, statusMotivation - 1));
+    setAnxiety(Math.min(10, statusAnxiety + 1));
   }
   if (minigameType === "fragole" && lost) {
-    statusHP = Math.max(1, statusHP - 1);
-    statusMotivation = Math.max(1, statusMotivation - 1);
-    statusAnxiety = Math.min(10, statusAnxiety + 1);
+    setHP(Math.max(1, statusHP - 1));
+    setMotivation(Math.max(1, statusMotivation - 1));
+    setAnxiety(Math.min(10, statusAnxiety + 1));
   }
   if (lost) {
     boxShakeTimer = BOX_SHAKE_DURATION;
@@ -540,8 +647,11 @@ function updateMinigame(deltaTime) {
             break;
           }
         } else {
-          stopMinigame("✲ L'articolo che hai letto per tutto il giorno era inutile...", true);
-          break;
+          setHP(Math.max(1, statusHP - 1));
+          setMotivation(Math.max(1, statusMotivation - 1));
+          setAnxiety(Math.min(10, statusAnxiety + 1));
+          boxShakeTimer = BOX_SHAKE_DURATION;
+          showText("✲ L'articolo che hai letto per tutto il giorno era inutile...", 1000);
         }
         papers.splice(i, 1);
         continue;
@@ -750,6 +860,25 @@ function update(deltaTime) {
   updateMinigame(deltaTime);
   if (boxShakeTimer > 0) {
     boxShakeTimer = Math.max(0, boxShakeTimer - deltaTime);
+  }
+  // Decrement individual status shake timers
+  if (hpShakeTimerPositive > 0) {
+    hpShakeTimerPositive = Math.max(0, hpShakeTimerPositive - deltaTime);
+  }
+  if (hpShakeTimerNegative > 0) {
+    hpShakeTimerNegative = Math.max(0, hpShakeTimerNegative - deltaTime);
+  }
+  if (motivationShakeTimerPositive > 0) {
+    motivationShakeTimerPositive = Math.max(0, motivationShakeTimerPositive - deltaTime);
+  }
+  if (motivationShakeTimerNegative > 0) {
+    motivationShakeTimerNegative = Math.max(0, motivationShakeTimerNegative - deltaTime);
+  }
+  if (anxietyShakeTimerPositive > 0) {
+    anxietyShakeTimerPositive = Math.max(0, anxietyShakeTimerPositive - deltaTime);
+  }
+  if (anxietyShakeTimerNegative > 0) {
+    anxietyShakeTimerNegative = Math.max(0, anxietyShakeTimerNegative - deltaTime);
   }
   if (coffeeShakeLevel > 0) {
     coffeeShakeDecayTimer -= deltaTime;
