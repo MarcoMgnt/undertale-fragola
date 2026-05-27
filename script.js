@@ -676,7 +676,7 @@ function updateMinigame(deltaTime) {
         if (word.color === "white") {
           lettersCaught += 1;
           letters.splice(i, 1);
-          if (lettersCaught >= 100) {
+          if (lettersCaught >= 75) {
             const addedWords = calculateWordsFromWriting();
             wordsWritten += addedWords;
             if (addedWords === 0) {
