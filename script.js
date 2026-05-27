@@ -664,35 +664,45 @@ function updateMinigame(deltaTime) {
   } else if (minigameType === "scrivi") {
     letterSpawnCooldown -= deltaTime;
     if (letterSpawnCooldown <= 0) {
-      spawnLetter();
-      letterSpawnCooldown = 0.5 + Math.random() * 0.3;
+      spawnWord();
+      letterSpawnCooldown = 0.075;
     }
 
     for (let i = letters.length - 1; i >= 0; i -= 1) {
-      const letter = letters[i];
-      letter.ttl -= deltaTime;
-      if (letter.ttl <= 0) {
-        letters.splice(i, 1);
+      const word = letters[i];
+      word.x -= word.speed * deltaTime;
+
+      if (checkWordCollision(word)) {
+        if (word.color === "white") {
+          lettersCaught += 1;
+          letters.splice(i, 1);
+          if (lettersCaught >= 100) {
+            const addedWords = calculateWordsFromWriting();
+            wordsWritten += addedWords;
+            if (addedWords === 0) {
+              stopMinigame(
+                `✲ Non hai niente su cui scrivere...`
+              );
+            } else {  
+              stopMinigame(
+              `✲ Oggi hai scritto ${addedWords.toLocaleString()} parole! Totale: ${wordsWritten.toLocaleString()}.`
+            );
+            }
+            break;
+          }
+        } else {
+          setHP(Math.max(1, statusHP - 1));
+          setMotivation(Math.max(1, statusMotivation - 1));
+          setAnxiety(Math.min(10, statusAnxiety + 1));
+          boxShakeTimer = BOX_SHAKE_DURATION;
+          showText("✲ Hai scritto una frase sbagliata!", 1000);
+          letters.splice(i, 1);
+        }
         continue;
       }
 
-      if (checkLetterCollision(letter)) {
-        lettersCaught += 1;
+      if (word.x + word.width < box.x) {
         letters.splice(i, 1);
-        if (lettersCaught >= 20) {
-          const addedWords = calculateWordsFromWriting();
-          wordsWritten += addedWords;
-          if (addedWords === 0) {
-            stopMinigame(
-              `✲ Non hai niente su cui scrivere...`
-            );
-          } else {  
-            stopMinigame(
-            `✲ Oggi hai scritto ${addedWords.toLocaleString()} parole! Totale: ${wordsWritten.toLocaleString()}.`
-          );
-          }
-          break;
-        }
       }
     }
   }
@@ -728,31 +738,41 @@ function checkPaperCollision(paper) {
   );
 }
 
-function spawnLetter() {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const char = alphabet[Math.floor(Math.random() * alphabet.length)];
-  const size = 30;
-  const x = box.x + 10 + Math.random() * (box.w - size - 20);
-  const y = box.y + 10 + Math.random() * (box.h - size - 20);
-  letters.push({ x, y, char, size, ttl: 1.5 + Math.random() * 0.8 });
+function spawnWord() {
+  const words = ["impact", "fertilization", "regimes", "vegetative", "growth", "yield", "organoleptic", "nutritional", "quality", "vaccinium", "corymbosum", "duke", "federica", "mecozzi", "alessandro", "gasparrini", "luca", "mazzoni", "bruno", "mezzetti", "davide", "raffaelli", "micol", "marcellini", "francesca", "balducci", "valeria", "pergolotti", "rohullah", "qaderi", "gianni", "malavolta", "franco", "capocasa", "academiceditor", "antonios", "koutelidakis", "received", "revised", "accepted", "published", "copyright", "authors", "licensee", "switzerland", "article", "open", "access", "distributed", "terms", "conditions", "creative", "commons", "attribution", "department", "agricultural", "food", "environmental", "sciences", "polytechnic", "university", "marche", "ancona", "berries", "corso", "mazzini", "cesena", "salvi", "vivai", "strada", "provinciale", "boschetto", "lagosanto", "azienda", "agricola", "contrada", "lapedona", "correspondence", "small", "fruits", "increasingly", "popular", "consumers", "producers", "blueberries", "standing", "flavour", "benefits", "specific", "growing", "requirements", "cultivation", "challenging", "areas", "alkaline", "soils", "plant", "limited", "soilless", "provides", "practical", "profitable", "solution", "issues", "higher", "initial", "costs", "study", "examined", "grown", "conditions", "region", "using", "different", "concentrations", "nutrient", "solutions", "measured", "electrical", "conductivity", "fertigation", "treatments", "compared", "irrigation", "water", "results", "showed", "produced", "highest", "numbers", "wood", "flower", "shoots", "greatest", "although", "levels", "significantly", "affect", "parameters", "plants", "lower", "intake", "displayed", "anthocyanin", "content", "antioxidant", "capacity", "contrast", "greater", "supply", "polyphenol", "overall", "findings", "highlight", "potential", "optimize", "production", "suboptimal", "recommended", "dietary", "guidelines", "worldwide", "several", "studies", "shown", "rich", "health", "protective", "against", "various", "diseases", "therefore", "considered", "functional", "foods", "among", "essential", "mention", "most", "cover", "large", "part", "market", "strawberry", "fragaria", "ananassa", "raspberry", "rubus", "idaeus", "blueberry", "blackberry", "black", "cranberry", "oxycoccus", "many", "others", "consumed", "either", "fresh", "processed", "form", "unique", "shape", "colour", "chemical", "composition", "boast", "remarkable", "wide", "range", "phytochemicals", "phenolic", "compounds", "activate", "biochemical", "mechanisms", "counteract", "development", "progression", "chronic", "within", "broad", "group", "gained", "particular", "attention", "due", "rapid", "expansion", "cultivated", "value", "documented", "promoting", "properties", "between", "trade", "experienced", "significant", "global", "driven", "demand", "healthier", "conscious", "trend", "remained", "consistent", "subsequent", "years", "european", "situation", "increase", "widespread", "species", "highbush", "belongs", "ericaceae", "family", "main", "groups", "recognized", "northern", "mainly", "originating", "cooler", "north", "america", "southern", "transition", "traditional", "cultivars", "transformative", "developments", "industry", "varieties", "long", "dominant", "climates", "require", "chilling", "hours", "produce", "fruit", "winter", "allowing", "growers", "establish", "plantations", "warmer", "including", "peru", "mexico", "morocco", "parts", "africa", "asia", "turned", "truly", "crop", "enabling", "seasonal", "year", "round", "major", "markets", "like", "europe", "peculiar", "soil", "factor", "spread", "adapted", "fact", "require", "tend", "acidic", "organic", "matter", "drainage", "ensure", "performance", "according", "conducted", "china", "values", "exceeding", "support", "ideal", "combined", "agronomic", "thrive", "climatic", "cold", "guaranteeing", "dormancy", "success", "however", "haze", "damage", "especially", "during", "flowering", "sudden", "temperature", "drop", "occurs", "characteristics", "key", "understanding", "origin", "adaptation", "began", "early", "century", "canada", "united", "states", "southeastern", "arkansas", "florida", "georgia", "carolina", "maine", "michigan", "jersey", "washington", "geographic", "distribution", "characterized", "markedly", "pedoclimatic", "extension", "harvesting", "period", "commercial", "supported", "presence", "naturally", "suited", "optimal", "ranging", "typically", "sandy", "loam", "texture", "where", "present", "practices", "commonly", "adopted", "heavy", "mulching", "improve", "structure", "application", "elemental", "sulphur", "reduce", "pacific", "northwest", "demonstrates", "climate", "formation", "determines", "suitability", "environments", "precipitation", "west", "cascade", "promotes", "east", "result", "less", "frequently", "artificially", "acidified", "amended", "taking", "account", "hemisphere", "south", "introduced", "chile", "argentina", "complementary", "windows", "country", "zones", "types", "accumulation", "generally", "increasing", "humid", "low", "improved", "through", "incorporation", "sugarcane", "residues", "additional", "takes", "place", "entrerios", "buenos", "aires", "favourable", "provide", "risks", "associated", "frost", "hail", "events", "spring", "international", "organization", "report", "emerging", "zones", "notably", "compensated", "reduced", "output", "demonstrating", "resilience", "adaptability", "diversification", "sourcing", "mitigates", "stable", "prices"];
+  const word = words[Math.floor(Math.random() * words.length)];
+  const isWhite = Math.random() < 0.8; // 70% white, 30% red
+  const fontSize = 14;
+  const lineHeight = (box.h) / 10; // 5 rows
+  const row = Math.floor(Math.random() * 10);
+  const y = box.y + row * lineHeight;
+  
+  const textWidth = word.length * fontSize * 0.6; // rough estimate
+  
+  letters.push({
+    text: word,
+    x: box.x + box.w,
+    y: y,
+    width: textWidth,
+    height: fontSize,
+    speed: 300,
+    color: isWhite ? "white" : "red",
+    size: fontSize
+  });
 }
 
-function checkLetterCollision(letter) {
-  const playerLeft = player.x - player.size / 2;
-  const playerRight = player.x + player.size / 2;
-  const playerTop = player.y - player.size / 2;
-  const playerBottom = player.y + player.size / 2;
-
-  const letterLeft = letter.x;
-  const letterRight = letter.x + letter.size;
-  const letterTop = letter.y;
-  const letterBottom = letter.y + letter.size;
+function checkWordCollision(word) {
+  const playerBounds = getPlayerCollisionBounds(0.4);
+  const wordLeft = word.x;
+  const wordRight = word.x + word.width;
+  const wordTop = word.y - word.size / 2;
+  const wordBottom = word.y + word.size / 2;
 
   return !(
-    playerRight < letterLeft ||
-    playerLeft > letterRight ||
-    playerBottom < letterTop ||
-    playerTop > letterBottom
+    playerBounds.right < wordLeft ||
+    playerBounds.left > wordRight ||
+    playerBounds.bottom < wordTop ||
+    playerBounds.top > wordBottom
   );
 }
 
@@ -781,16 +801,12 @@ function drawMinigame() {
     );
   });
 
-  letters.forEach((letter) => {
-    ctx.fillStyle = "black";
-    ctx.fillRect(letter.x, letter.y, letter.size, letter.size);
-    ctx.strokeStyle = "black";
-    ctx.strokeRect(letter.x, letter.y, letter.size, letter.size);
-    ctx.fillStyle = "white";
-    ctx.font = "bold 20px monospace";
-    ctx.textAlign = "center";
+  letters.forEach((word) => {
+    ctx.fillStyle = word.color;
+    ctx.font = `bold ${word.size}px monospace`;
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(letter.char, letter.x + letter.size / 2, letter.y + letter.size / 2);
+    ctx.fillText(word.text, word.x, word.y);
   });
 }
 
