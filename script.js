@@ -480,7 +480,7 @@ function updateFragole(deltaTime) {
       setMotivation(Math.max(1, statusMotivation - 1));
       setAnxiety(Math.min(10, statusAnxiety + 1));
       boxShakeTimer = BOX_SHAKE_DURATION;
-      showText("✲ Hai rotto una pianta!", 1000);
+      showText("✲ Attenta! Hai rotto una pianta!", 1000);
       const collidedPillar = pillars.splice(i, 1)[0];
       for (let j = strawberries.length - 1; j >= 0; j--) {
         if (strawberries[j].pillarRef === collidedPillar) strawberries.splice(j, 1);
@@ -575,20 +575,33 @@ function accettazione() {
 }
 
 function submitThesis() {
-  //if (wordsWritten >= targetParole && tesicorretta === true) {
-  if (true === true) {
+  if (wordsWritten >= targetParole && tesicorretta === true) {
+  //if (true === true) {
+    lockUI();
     document.getElementById("text").innerText =
-      `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. 🎉 🎉Ti puoi laureare!!`;
-    // hyperlink to a link
+      `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. 🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉 Ti puoi laureare!!`;
+      // hyperlink to a link
     setTimeout(() => {
-      window.open("https://www.youtube.com/watch?v=TqdPXSAUoyA&list=RDTqdPXSAUoyA&start_radio=1", "_blank");
+      window.open("https://youtu.be/TqdPXSAUoyA?si=TWYHCJ4gOYwFn_-B", "_blank");
     }, 3000);
     } else {
     setMotivation(Math.max(1, statusMotivation - 1));
     setAnxiety(Math.min(10, statusAnxiety + 1));
     document.getElementById("text").innerText =
-      `✲ Non sei ancora pronto. Hai solo ${wordsWritten.toLocaleString()} parole`;
+      `✲ La tesi non è ancora finita. Hai solo ${wordsWritten.toLocaleString()} parole`;
   }
+}
+
+function lockUI() {
+  let overlay = document.getElementById("lockOverlay");
+
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "lockOverlay";
+    document.body.appendChild(overlay);
+  }
+
+  overlay.style.display = "block";
 }
 
 function stopMinigame(message, lost = false) {

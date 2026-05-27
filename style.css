@@ -172,4 +172,15 @@ button:active {
     padding: 7px 14px;
     font-size: 13px;
   }
+
+  #lockOverlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 9999;
+  display: none;
+  }
+
 }
+
+
