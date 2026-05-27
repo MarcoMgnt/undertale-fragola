@@ -131,7 +131,7 @@ let strawberriesCollected = 0;
 let fragoleSpawnCooldown = 0;
 let fragoleWins = 0;
 const FRAGOLE_TARGET = 16;
-let targetParole = 100000;
+let targetParole = 500000;
 let tesicorretta = false;
 let boxShakeTimer = 0;
 const BOX_SHAKE_DURATION = 1.0;
@@ -558,7 +558,7 @@ function abbandona()  {
 }
 
 function accettazione() {
-  if (wordsWritten > 10000) {
+  if (wordsWritten > 30000) {
   targetParole = 10000;
   setHP(Math.max(1, statusHP - 1));
   setMotivation(Math.max(1, statusMotivation - 2));
@@ -575,10 +575,15 @@ function accettazione() {
 }
 
 function submitThesis() {
-  if (wordsWritten >= targetParole && tesicorretta === true) {
+  //if (wordsWritten >= targetParole && tesicorretta === true) {
+  if (true === true) {
     document.getElementById("text").innerText =
-      `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. Hai vinto!`;
-  } else {
+      `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. 🎉 🎉Ti puoi laureare!!`;
+    // hyperlink to a link
+    setTimeout(() => {
+      window.open("https://www.youtube.com/watch?v=TqdPXSAUoyA&list=RDTqdPXSAUoyA&start_radio=1", "_blank");
+    }, 3000);
+    } else {
     setMotivation(Math.max(1, statusMotivation - 1));
     setAnxiety(Math.min(10, statusAnxiety + 1));
     document.getElementById("text").innerText =

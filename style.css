@@ -91,7 +91,7 @@ button:active {
 
 #box-menu .menu-option {
   width: 100%;
-  background: black;
+  background: rgba(0, 0, 0, 0);
   color: white;
   border: none;
   margin-bottom: 8px;
