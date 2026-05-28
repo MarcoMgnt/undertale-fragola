@@ -519,13 +519,12 @@ function drawFragole(ctx) {
 }
 
 function calculateWordsFromWriting() {
-  const ricercaBonus = 2000;
-  const motivationBonus = statusMotivation * 220;
-  const anxietyBonus = statusAnxiety * 140;
-  const randomBonus = Math.round(Math.random() * 200);
-  const base = ricercaWins * (ricercaBonus + motivationBonus + anxietyBonus + randomBonus * coffeeDrank);
-  const fragoleMultiplier = fragoleWins * 1; // each fragole win gives +20% writing output
-  return Math.round(base * fragoleMultiplier);
+  const ricercaBonus = 3000;
+  const motivationBonus = statusMotivation * 150;
+  const anxietyBonus = statusAnxiety * 100;
+  const randomBonus = Math.round(Math.random() * 300);
+  const base = (ricercaWins + fragoleWins) * (ricercaBonus + motivationBonus - anxietyBonus + randomBonus * coffeeDrank);
+  return Math.round(base);
 }
 
 function correzionetesi() {
@@ -533,21 +532,21 @@ function correzionetesi() {
     document.getElementById("text").innerText =
       `✲ Ma non hai ancora scritto niente! Non mi fare perdere tempo...`;
     setHP(Math.max(1, statusHP - 1));
-  } else if (wordsWritten <= 10000) {
+  } else if (wordsWritten <= 20000) {
     wordsWritten = Math.max(0, wordsWritten - Math.round(Math.random() * 500 + 500)); // lose some words due to corrections
     document.getElementById("text").innerText =
       `✲ Non hai ancora scritto abbastanza! Ma intanto rimuovi questa parte... Totale parole: ${wordsWritten.toLocaleString()}`;
     setHP(Math.max(1, statusHP - 1));
     setMotivation(Math.max(1, statusMotivation - 1));
     setAnxiety(Math.min(10, statusAnxiety + 1));
-  } else if (wordsWritten > 10000) {
+  } else if (wordsWritten > 20000) {
     tesicorretta = true;
     setHP(Math.max(1, statusHP - 1));
     setMotivation(Math.max(1, statusMotivation - 1));
     setAnxiety(Math.min(10, statusAnxiety + 1));
     wordsWritten = Math.max(0, wordsWritten - Math.round(Math.random() * 500 + 500)); // lose some words due to corrections
     document.getElementById("text").innerText =
-      `✲ Non male ma cambia la struttura... Totale parole: ${wordsWritten.toLocaleString()}`;
+      `✲ Può andare bene ma cambia la struttura... Totale parole: ${wordsWritten.toLocaleString()}`;
   }
 }
 
@@ -556,12 +555,12 @@ function abbandona()  {
   setMotivation(Math.max(1, statusMotivation - 3));
   setAnxiety(Math.min(10, statusAnxiety + 3));
   document.getElementById("text").innerText =
-    `✲ Hai deciso di abbandonare... ma ormai non puoi tornare indietro`;
+    `✲ Hai deciso di abbandonare il dottorato?... troppo tardi ormai non puoi tornare indietro`;
 }
 
 function accettazione() {
-  if (wordsWritten > 30000) {
-  targetParole = 10000;
+  if (wordsWritten > 20000) {
+  targetParole = 20000;
   setHP(Math.max(1, statusHP - 1));
   setMotivation(Math.max(1, statusMotivation - 2));
   setAnxiety(Math.max(1, statusAnxiety - 3));
