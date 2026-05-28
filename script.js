@@ -584,7 +584,7 @@ function submitThesis() {
       `✲ Hai consegnato la tesi con ${wordsWritten.toLocaleString()} parole. 🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉 Ti puoi laureare!!! Ora apri la busta...`;
       // hyperlink to a link
     setTimeout(() => {
-      window.open("https://youtu.be/TqdPXSAUoyA?si=TWYHCJ4gOYwFn_-B", "_blank");
+      window.open("https://youtu.be/0AQMAth2gio?si=TLHNu01cUNIlJ6j2", "_blank");
     }, 4000);
     } else {
     setMotivation(Math.max(1, statusMotivation - 1));
